@@ -1,0 +1,6 @@
+/target
+db_data
+.env
+files
+config.toml
+.DS_Store

@@ -1,0 +1,3 @@
+[workspace]
+resolver = "2"
+members = ["aginsensors_core", "socketio_connector"]
