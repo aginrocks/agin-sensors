@@ -2,7 +2,10 @@ use color_eyre::eyre::Result;
 use std::collections::HashMap;
 use tokio::fs::read_to_string;
 
-use crate::{databases::GlobalDatabase, global_config::GlobalConfig};
+use crate::{
+    databases::{GlobalDatabase, IntoClient},
+    global_config::GlobalConfig,
+};
 
 pub struct AppState {
     pub databases: HashMap<String, GlobalDatabase>,
@@ -15,12 +18,12 @@ impl AppState {
         let parsed_config: GlobalConfig = serde_yaml::from_str(&config)
             .map_err(|e| color_eyre::eyre::eyre!("Failed to parse global config: {}", e))?;
 
-        let mut databases: HashMap<String, GlobalDatabase> = HashMap::new();
+        let databases = parsed_config
+            .databases
+            .into_iter()
+            .map(|(db_name, db_config)| (db_name, db_config.into_client()))
+            .collect::<HashMap<_, _>>();
 
-        // for (db_name, db_config) in parsed_config.databases.iter() {
-        //     let client = GlobalDatabase::from(db_config);
-        // }
-
-        todo!()
+        Ok(AppState { databases })
     }
 }

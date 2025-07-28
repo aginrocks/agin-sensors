@@ -14,6 +14,7 @@ pub enum DatabaseType {
 
 #[derive(Serialize, Deserialize, JsonSchema, Clone, Debug)]
 #[serde(untagged)]
+#[enum_dispatch]
 pub enum GlobalDatabaseConfig {
     Influx(influx::GlobalConfigInflux),
 }
@@ -21,6 +22,11 @@ pub enum GlobalDatabaseConfig {
 #[enum_dispatch]
 pub enum GlobalDatabase {
     Influx(influx::GlobalInflux),
+}
+
+#[enum_dispatch(GlobalDatabaseConfig)]
+pub trait IntoClient {
+    fn into_client(self) -> GlobalDatabase;
 }
 
 #[macro_export]
