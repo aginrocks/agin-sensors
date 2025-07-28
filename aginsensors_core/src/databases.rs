@@ -1,5 +1,4 @@
 mod influx;
-mod prometheus;
 
 use crate::database::{Database, DatabaseDispatch};
 use enum_dispatch::enum_dispatch;
@@ -11,18 +10,56 @@ use serde::{Deserialize, Serialize};
 #[enum_dispatch]
 pub enum DatabaseType {
     Influx(influx::Influx),
-    Prometheus(prometheus::Prometheus),
+}
+
+#[derive(Serialize, Deserialize, JsonSchema, Clone, Debug)]
+#[serde(untagged)]
+pub enum GlobalDatabaseConfig {
+    Influx(influx::GlobalConfigInflux),
+}
+
+#[enum_dispatch]
+pub enum GlobalDatabase {
+    Influx(influx::GlobalInflux),
 }
 
 #[macro_export]
 macro_rules! define_database {
-    ($tag_value:literal, $struct_name:ident { $($field:tt)* }) => {
+    (
+        $tag_value:literal,
+        $struct_name:ident,
+        global_config = { $($global_config:tt)* },
+        global_state = { $($global_state:tt)* },
+        local_config = { $($local_config:tt)* }
+    ) => {
         paste::paste! {
             #[derive(serde::Serialize, serde::Deserialize, schemars::JsonSchema, Clone, Debug)]
             pub struct $struct_name {
                  pub r#type: [<DatabaseType$struct_name>],
 
-                 $($field)*
+                 // #[serde(deserialize_with = "deserialize_global")]
+                 pub name: String,
+
+                 $($local_config)*
+            }
+
+            // fn deserialize_global<'de, D>(deserializer: D) -> Result<[<Global$struct_name>], D::Error>
+            // where
+            //     D: serde::Deserializer<'de>,
+            // {
+            //     todo!()
+            // }
+
+            #[derive(serde::Serialize, serde::Deserialize, schemars::JsonSchema, Clone, Debug)]
+            pub struct [<GlobalConfig$struct_name>] {
+                 pub r#type: [<DatabaseType$struct_name>],
+
+                 $($global_config)*
+            }
+
+            #[derive(Clone, Debug)]
+            pub struct [<Global$struct_name>] {
+                 $($global_state)*
             }
 
             #[derive(serde::Serialize, serde::Deserialize, schemars::JsonSchema, Clone, Debug)]
@@ -31,7 +68,7 @@ macro_rules! define_database {
                 Value,
             }
 
-            impl crate::database::DatabaseDispatch for $struct_name {
+            impl $crate::database::DatabaseDispatch for $struct_name {
                 fn as_database(&self) -> &dyn Database {
                     self
                 }

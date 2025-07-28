@@ -1,8 +1,32 @@
 use async_trait::async_trait;
+use enum_dispatch::enum_dispatch;
+use influxdb::Client;
 
-use crate::{database::Database, define_database};
+use crate::{database::Database, databases::GlobalDatabase, define_database};
 
-define_database!("influxdb", Influx {});
+define_database!(
+    "influxdb",
+    Influx,
+    global_config = {
+        pub url: String,
+        pub token: String,
+    },
+    global_state = {
+        pub client: Client,
+    },
+    local_config = {
+        pub bucket: String,
+    }
+);
+
+// #[enum_dispatch(GlobalDatabase)]
+impl From<GlobalConfigInflux> for GlobalInflux {
+    fn from(config: GlobalConfigInflux) -> Self {
+        GlobalInflux {
+            client: Client::new(config.url, config.token),
+        }
+    }
+}
 
 #[async_trait]
 impl Database for Influx {
