@@ -1,6 +1,6 @@
 use color_eyre::eyre::Result;
-use std::collections::HashMap;
-use tokio::fs::read_to_string;
+use std::{collections::HashMap, sync::Arc};
+use tokio::{fs::read_to_string, sync::OnceCell};
 
 use crate::{
     databases::{GlobalDatabase, IntoClient},
@@ -12,7 +12,7 @@ pub struct AppState {
 }
 
 impl AppState {
-    pub async fn try_load() -> Result<Self> {
+    pub async fn try_load() -> Result<Arc<Self>> {
         let config = read_to_string("global.yaml").await?;
 
         let parsed_config: GlobalConfig = serde_yaml::from_str(&config)
@@ -24,6 +24,15 @@ impl AppState {
             .map(|(db_name, db_config)| (db_name, db_config.into_client()))
             .collect::<HashMap<_, _>>();
 
-        Ok(AppState { databases })
+        Ok(Arc::new(AppState { databases }))
     }
+}
+
+static APP_STATE: OnceCell<Arc<AppState>> = OnceCell::const_new();
+
+pub async fn get_app_state() -> &'static Arc<AppState> {
+    APP_STATE
+        .get_or_try_init(AppState::try_load)
+        .await
+        .expect("Failed to initialize AppState")
 }
