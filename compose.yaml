@@ -8,6 +8,7 @@ services:
       - DOCKER_INFLUXDB_INIT_PASSWORD=7woUG5snFpSNbwr7
       - DOCKER_INFLUXDB_INIT_ORG=test-org
       - DOCKER_INFLUXDB_INIT_BUCKET=test-bucket
+      - DOCKER_INFLUXDB_INIT_ADMIN_TOKEN=7kvQLYnWRXZo2xkmfYi14_OSD3kOk93rwZ0SsdTMsttaw33AMaaGCgg6Bf_-yvEgE3736byabQFFZEA1CXwXFg==
     ports:
       - "8086:8086"
     volumes:
