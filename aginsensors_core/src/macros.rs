@@ -19,6 +19,14 @@ macro_rules! define_databases {
                 $($name($path::[<Global$name>])),*
             }
 
+            impl GlobalDB{
+                pub fn get_client(&self) -> &dyn $crate::database::Database {
+                    match self {
+                        $(GlobalDB::$name(db) => db),*
+                    }
+                }
+            }
+
             #[derive(Clone, Debug)]
             pub enum LocalDB {
                 $($name($path::[<Local$name>])),*

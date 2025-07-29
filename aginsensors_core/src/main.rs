@@ -3,7 +3,7 @@ use tracing::level_filters::LevelFilter;
 use tracing_error::ErrorLayer;
 use tracing_subscriber::{fmt::format::FmtSpan, layer::SubscriberExt, util::SubscriberInitExt};
 
-use crate::{schema::write_schema, state::get_app_state};
+use crate::{schema::write_schema, state::get_app_state, database::Database};
 
 mod connector;
 pub mod database;
@@ -20,11 +20,15 @@ async fn main() -> Result<()> {
 
     init_tracing().wrap_err("failed to set global tracing subscriber")?;
 
-    get_app_state().await;
+    let state = get_app_state().await;
 
     write_schema().await?;
 
     println!("Hello, world!");
+
+    let base = state.databases.get("influxdb").unwrap();
+
+    base
 
     Ok(())
 }

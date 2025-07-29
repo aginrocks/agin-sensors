@@ -1,5 +1,5 @@
 use async_trait::async_trait;
-use influxdb::Client;
+use influxdb::{Client, ReadQuery};
 
 use crate::{
     database::{Database, IntoGlobalDB},
@@ -34,6 +34,17 @@ impl IntoGlobalDB for GlobalConfigInflux {
 #[async_trait]
 impl Database for LocalInflux {
     async fn get_last_measurement(&self) -> color_eyre::eyre::Result<u64> {
+        let last_measurement = self
+            .global
+            .client
+            .query(ReadQuery::new(format!(
+                "from(bucket: {}) |> range(start: 1970-01-01T00:00:00Z) |> last()",
+                self.config.bucket
+            )))
+            .await?;
+
+        dbg!(last_measurement);
+
         Ok(0)
     }
 
