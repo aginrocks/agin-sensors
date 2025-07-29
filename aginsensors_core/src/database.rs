@@ -1,6 +1,5 @@
 use async_trait::async_trait;
 use color_eyre::eyre::Result;
-use enum_dispatch::enum_dispatch;
 
 use crate::{connector::Measurement, databases::GlobalDB};
 
@@ -13,7 +12,6 @@ pub trait Database {
     async fn write_measurements(&self, measurement: Vec<Measurement>) -> Result<()>;
 }
 
-#[enum_dispatch(GlobalDBConfig)]
 pub trait IntoGlobalDB {
     fn into_global_db(self) -> GlobalDB;
 }

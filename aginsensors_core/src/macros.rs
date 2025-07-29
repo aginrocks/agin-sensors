@@ -1,19 +1,15 @@
 #[macro_export]
 macro_rules! define_databases {
     ( $( $path:ident::$name:ident ),* ) => {
-        use $crate::database::{IntoGlobalDB};
-
         paste::paste! {
             #[derive(serde::Serialize, serde::Deserialize, schemars::JsonSchema, Clone, Debug)]
             #[serde(untagged)]
-            #[enum_dispatch::enum_dispatch]
             pub enum LocalDBConfig {
                 $($name($path::[<LocalConfig$name>])),*
             }
 
             #[derive(serde::Serialize, serde::Deserialize, schemars::JsonSchema, Clone, Debug)]
             #[serde(untagged)]
-            #[enum_dispatch::enum_dispatch]
             pub enum GlobalDBConfig {
                 $($name($path::[<GlobalConfig$name>])),*
             }
@@ -26,6 +22,29 @@ macro_rules! define_databases {
             #[derive(Clone, Debug)]
             pub enum LocalDB {
                 $($name($path::[<Local$name>])),*
+            }
+
+            impl $crate::database::IntoGlobalDB for GlobalDBConfig {
+                fn into_global_db(self) -> GlobalDB {
+                    match self {
+                        $(GlobalDBConfig::$name(config) => config.into_global_db()),*
+                    }
+                }
+            }
+
+            #[async_trait::async_trait]
+            impl $crate::database::Database for LocalDB {
+                async fn get_last_measurement(&self) -> color_eyre::eyre::Result<u64> {
+                    match self {
+                        $(LocalDB::$name(db) => db.get_last_measurement().await),*
+                    }
+                }
+
+                async fn write_measurements(&self, measurement: Vec<$crate::connector::Measurement>) -> color_eyre::eyre::Result<()> {
+                    match self {
+                        $(LocalDB::$name(db) => db.write_measurements(measurement).await),*
+                    }
+                }
             }
         }
     };

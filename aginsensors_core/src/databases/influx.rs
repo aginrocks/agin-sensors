@@ -1,5 +1,4 @@
 use async_trait::async_trait;
-use enum_dispatch::enum_dispatch;
 use influxdb::Client;
 
 use crate::{
@@ -40,7 +39,7 @@ impl Database for LocalInflux {
 
     async fn write_measurements(
         &self,
-        measurement: Vec<crate::connector::Measurement>,
+        _measurement: Vec<crate::connector::Measurement>,
     ) -> color_eyre::eyre::Result<()> {
         Ok(())
     }
