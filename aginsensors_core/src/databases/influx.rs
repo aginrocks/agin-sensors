@@ -15,7 +15,7 @@ use crate::{
 
 #[derive(Debug, FromDataPoint, Default)]
 pub struct InfluxMeasurement {
-    pub time: i64,
+    pub _time: DateTime<FixedOffset>,
 }
 
 define_database!(
@@ -54,7 +54,9 @@ impl Database for LocalInflux {
             ))))
             .await?;
 
-        Ok(last_measurement.first().map_or(0, |m| m.time))
+        dbg!(&last_measurement);
+
+        Ok(last_measurement.first().map_or(0, |m| m._time.timestamp()))
     }
 
     async fn write_measurements(
@@ -64,7 +66,7 @@ impl Database for LocalInflux {
         let measurement = measurement
             .into_iter()
             .map(|m| -> Result<DataPoint> {
-                let mut datapoint = DataPoint::builder(m.measurement);
+                let mut datapoint = DataPoint::builder(m.measurement).timestamp(m.timestamp);
                 for (k, v) in m.values.iter() {
                     datapoint = datapoint.field(k, *v);
                 }
@@ -74,7 +76,11 @@ impl Database for LocalInflux {
 
         self.global
             .client
-            .write(&self.config.bucket, stream::iter(measurement))
+            .write_with_precision(
+                &self.config.bucket,
+                stream::iter(measurement),
+                influxdb2::api::write::TimestampPrecision::Milliseconds,
+            )
             .await?;
 
         Ok(())

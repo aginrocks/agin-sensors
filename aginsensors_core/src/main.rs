@@ -48,7 +48,7 @@ async fn main() -> Result<()> {
             values: HashMap::from([("value".to_string(), (i as f64))]),
         }])
         .await?;
-        thread::sleep(Duration::from_millis(1000));
+        thread::sleep(Duration::from_millis(1));
     }
 
     let mesurement = db.get_last_measurement().await?;

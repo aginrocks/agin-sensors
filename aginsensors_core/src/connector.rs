@@ -5,6 +5,7 @@ use tokio::sync::mpsc::Receiver;
 
 use crate::global_config::GlobalConfig;
 
+#[derive(Debug, Clone)]
 pub struct Measurement {
     pub timestamp: i64,
     pub measurement: String,
