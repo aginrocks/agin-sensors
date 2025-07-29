@@ -14,6 +14,7 @@ define_database!(
     global_config = {
         pub url: String,
         pub token: String,
+        pub organization: String,
     },
     global_state = {
         pub client: Client,
@@ -25,18 +26,14 @@ define_database!(
 
 impl IntoClient for GlobalConfigInflux {
     fn into_client(self) -> GlobalDatabase {
-        GlobalDatabase::Influx(GlobalInflux {
-            client: Client::new(self.url, self.token),
-        })
+        let client = Client::new(self.url, self.organization).with_token(self.token);
+
+        GlobalDatabase::Influx(GlobalInflux { client })
     }
 }
 
 #[async_trait]
 impl Database for Influx {
-    async fn connect(&self) -> color_eyre::eyre::Result<()> {
-        Ok(())
-    }
-
     async fn get_last_measurement(&self) -> color_eyre::eyre::Result<u64> {
         Ok(0)
     }

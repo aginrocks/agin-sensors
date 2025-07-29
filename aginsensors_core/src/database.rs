@@ -11,8 +11,6 @@ pub trait DatabaseDispatch {
 
 #[async_trait]
 pub trait Database {
-    async fn connect(&self) -> Result<()>;
-
     /// Returns the last measurement timestamp from the database.
     async fn get_last_measurement(&self) -> Result<u64>;
 

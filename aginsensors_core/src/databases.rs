@@ -43,18 +43,13 @@ macro_rules! define_database {
             pub struct $struct_name {
                  pub r#type: [<DatabaseType$struct_name>],
 
-                 // #[serde(deserialize_with = "deserialize_global")]
                  pub name: String,
+
+                 #[serde(skip)]
+                 pub global_state: Option<[<Global$struct_name>]>,
 
                  $($local_config)*
             }
-
-            // fn deserialize_global<'de, D>(deserializer: D) -> Result<[<Global$struct_name>], D::Error>
-            // where
-            //     D: serde::Deserializer<'de>,
-            // {
-            //     todo!()
-            // }
 
             #[derive(serde::Serialize, serde::Deserialize, schemars::JsonSchema, Clone, Debug)]
             pub struct [<GlobalConfig$struct_name>] {
