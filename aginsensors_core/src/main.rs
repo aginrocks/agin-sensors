@@ -7,8 +7,9 @@ use crate::{schema::write_schema, state::get_app_state};
 
 mod connector;
 pub mod database;
-mod databases;
+pub mod databases;
 pub mod global_config;
+pub mod macros;
 mod project_config;
 mod schema;
 mod state;

@@ -3,8 +3,8 @@ use enum_dispatch::enum_dispatch;
 use influxdb::Client;
 
 use crate::{
-    database::Database,
-    databases::{GlobalDatabase, IntoClient},
+    database::{Database, IntoGlobalDB},
+    databases::GlobalDB,
     define_database,
 };
 
@@ -24,16 +24,16 @@ define_database!(
     }
 );
 
-impl IntoClient for GlobalConfigInflux {
-    fn into_client(self) -> GlobalDatabase {
+impl IntoGlobalDB for GlobalConfigInflux {
+    fn into_global_db(self) -> GlobalDB {
         let client = Client::new(self.url, self.organization).with_token(self.token);
 
-        GlobalDatabase::Influx(GlobalInflux { client })
+        GlobalDB::Influx(GlobalInflux { client })
     }
 }
 
 #[async_trait]
-impl Database for Influx {
+impl Database for LocalInflux {
     async fn get_last_measurement(&self) -> color_eyre::eyre::Result<u64> {
         Ok(0)
     }
