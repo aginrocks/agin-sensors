@@ -3,7 +3,10 @@ use tracing::level_filters::LevelFilter;
 use tracing_error::ErrorLayer;
 use tracing_subscriber::{fmt::format::FmtSpan, layer::SubscriberExt, util::SubscriberInitExt};
 
-use crate::{schema::write_schema, state::get_app_state, database::Database};
+use crate::{
+    database::Database, databases::influx::LocalConfigInflux, schema::write_schema,
+    state::get_app_state,
+};
 
 mod connector;
 pub mod database;
@@ -26,9 +29,15 @@ async fn main() -> Result<()> {
 
     println!("Hello, world!");
 
-    let base = state.databases.get("influxdb").unwrap();
+    let base = state.databases.get("influx").unwrap();
 
-    base
+    let db = base.new_local_client(&databases::LocalDBConfig::Influx(LocalConfigInflux {
+        r#type: crate::databases::influx::DatabaseTypeInflux::Value,
+        name: "Influx".to_string(),
+        bucket: "test-bucket".to_string(),
+    }));
+
+    db.get_last_measurement().await?;
 
     Ok(())
 }

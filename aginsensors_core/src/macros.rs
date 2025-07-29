@@ -19,10 +19,15 @@ macro_rules! define_databases {
                 $($name($path::[<Global$name>])),*
             }
 
-            impl GlobalDB{
-                pub fn get_client(&self) -> &dyn $crate::database::Database {
+            impl GlobalDB {
+                pub fn new_local_client(&self, config: &LocalDBConfig) -> LocalDB {
                     match self {
-                        $(GlobalDB::$name(db) => db),*
+                        $(GlobalDB::$name(global) => LocalDB::$name($path::[<Local$name>] {
+                            config: match config {
+                                LocalDBConfig::$name(local_config) => local_config.clone(),
+                            },
+                            global: global.clone(),
+                        })),*
                     }
                 }
             }
