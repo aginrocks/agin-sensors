@@ -6,7 +6,7 @@ use tokio::sync::mpsc::Receiver;
 use crate::global_config::GlobalConfig;
 
 pub struct Measurement {
-    pub timestamp: u64,
+    pub timestamp: i64,
     pub measurement: String,
     pub bucket: Option<String>,
     pub values: HashMap<String, f64>,

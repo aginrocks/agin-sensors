@@ -47,7 +47,7 @@ macro_rules! define_databases {
 
             #[async_trait::async_trait]
             impl $crate::database::Database for LocalDB {
-                async fn get_last_measurement(&self) -> color_eyre::eyre::Result<u64> {
+                async fn get_last_measurement(&self) -> color_eyre::eyre::Result<i64> {
                     match self {
                         $(LocalDB::$name(db) => db.get_last_measurement().await),*
                     }
