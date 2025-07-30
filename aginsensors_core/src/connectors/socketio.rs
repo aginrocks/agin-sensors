@@ -8,22 +8,22 @@ use crate::{
 };
 
 define_connector!(
-    "mqtt",
-    Mqtt,
+    "socketio",
+    SocketIo,
     config = {
         pub url: String,
     },
     state = {}
 );
 
-impl Connector for Mqtt {
+impl Connector for SocketIo {
     fn new(config: &ConnectorConfig) -> Self {
-        if let ConnectorConfig::Mqtt(config) = config {
-            Mqtt {
+        if let ConnectorConfig::SocketIo(config) = config {
+            SocketIo {
                 config: config.clone(),
             }
         } else {
-            panic!("Invalid connector configuration for Mqtt");
+            panic!("Invalid connector configuration for Socket.IO");
         }
     }
 

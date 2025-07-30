@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use color_eyre::eyre::Result;
 use tokio::sync::mpsc::Receiver;
 
-use crate::connectors::{ConnectorConfig, ConnectorType};
+use crate::connectors::ConnectorConfig;
 
 #[derive(Debug, Clone)]
 pub struct Measurement {
