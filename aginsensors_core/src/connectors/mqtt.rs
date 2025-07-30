@@ -2,8 +2,7 @@ use color_eyre::eyre::Result;
 use tokio::sync::mpsc::Receiver;
 
 use crate::{
-    connector::{Connector, Measurement},
-    connectors::ConnectorConfig,
+    connector::{ConnectorRunner, Measurement},
     define_connector,
 };
 
@@ -16,17 +15,15 @@ define_connector!(
     state = {}
 );
 
-impl Connector for Mqtt {
-    fn new(config: &ConnectorConfig) -> Self {
-        if let ConnectorConfig::Mqtt(config) = config {
-            Mqtt {
-                config: config.clone(),
-            }
-        } else {
-            panic!("Invalid connector configuration for Mqtt");
+impl MqttConnector for Mqtt {
+    fn new(config: &ConfigMqtt) -> Self {
+        Mqtt {
+            config: config.clone(),
         }
     }
+}
 
+impl ConnectorRunner for Mqtt {
     fn run(&self) -> Result<Receiver<Measurement>> {
         todo!()
     }

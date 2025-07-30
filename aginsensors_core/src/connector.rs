@@ -13,9 +13,11 @@ pub struct Measurement {
     pub values: HashMap<String, f64>,
 }
 
-pub trait Connector {
+pub trait ConnectorBuilder {
     fn new(config: &ConnectorConfig) -> Self;
+}
 
+pub trait ConnectorRunner {
     /// Runs the connector (conencts to a broker, starts a HTTP server, etc.).
     /// Returns a Tokio mpsc channel with Measurement events.
     fn run(&self) -> Result<Receiver<Measurement>>;

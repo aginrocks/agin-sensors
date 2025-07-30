@@ -12,6 +12,22 @@ macro_rules! define_connectors {
             pub enum ConnectorType {
                 $($name($path::$name)),*
             }
+
+            impl $crate::connector::ConnectorBuilder for ConnectorType {
+                fn new(config: &ConnectorConfig) -> Self {
+                    match config {
+                        $(ConnectorConfig::$name(config) => ConnectorType::$name(<$path::$name as $path::[<$name Connector>]>::new(config))),*
+                    }
+                }
+            }
+
+            impl $crate::connector::ConnectorRunner for ConnectorType {
+                fn run(&self) -> color_eyre::eyre::Result<tokio::sync::mpsc::Receiver<$crate::connector::Measurement>> {
+                    match self {
+                        $(ConnectorType::$name(connector) => connector.run()),*
+                    }
+                }
+            }
         }
     };
 }
@@ -45,6 +61,10 @@ macro_rules! define_connector {
             pub enum [<ConnectorType$struct_name>] {
                 #[serde(rename = $tag_value)]
                 Value,
+            }
+
+            pub trait [<$struct_name Connector>] {
+                fn new(config: &[<Config$struct_name>]) -> Self;
             }
         }
     };
