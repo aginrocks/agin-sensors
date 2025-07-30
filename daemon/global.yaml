@@ -1,4 +1,4 @@
-# yaml-language-server: $schema=https://github.com/aginrocks/agin-sensors/raw/refs/heads/main/aginsensors_core/global_schema.json
+# yaml-language-server: $schema=https://github.com/aginrocks/agin-sensors/raw/refs/heads/main/daemon/global_schema.json
 databases:
   influx:
     type: influxdb
