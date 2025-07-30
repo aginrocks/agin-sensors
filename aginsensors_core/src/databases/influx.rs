@@ -34,11 +34,11 @@ define_database!(
     }
 );
 
-impl IntoGlobalDB for GlobalConfigInflux {
-    fn into_global_db(self) -> GlobalDB {
+impl IntoGlobalInflux for GlobalConfigInflux {
+    fn into_global_db(self) -> GlobalInflux {
         let client = Client::new(self.url, self.organization, self.token);
 
-        GlobalDB::Influx(GlobalInflux { client })
+        GlobalInflux { client }
     }
 }
 

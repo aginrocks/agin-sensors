@@ -11,3 +11,6 @@ connectors:
     port: 3000
   mqtt:
     type: mqtt
+    url: mqtt://localhost:1883
+    username: mqtt_user
+    password: mqtt_password

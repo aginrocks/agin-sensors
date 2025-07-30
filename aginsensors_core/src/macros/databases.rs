@@ -39,8 +39,9 @@ macro_rules! define_databases {
 
             impl $crate::database::IntoGlobalDB for GlobalDBConfig {
                 fn into_global_db(self) -> GlobalDB {
+                    $(use $path::[<IntoGlobal$name>] ;)*
                     match self {
-                        $(GlobalDBConfig::$name(config) => config.into_global_db()),*
+                        $(GlobalDBConfig::$name(config) => GlobalDB::$name(config.into_global_db())),*
                     }
                 }
             }
@@ -105,6 +106,10 @@ macro_rules! define_database {
             pub enum [<DatabaseType$struct_name>] {
                 #[serde(rename = $tag_value)]
                 Value,
+            }
+
+            pub trait [<IntoGlobal$struct_name>] {
+                fn into_global_db(self) -> [<Global$struct_name>];
             }
         }
     };
