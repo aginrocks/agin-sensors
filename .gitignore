@@ -5,3 +5,4 @@ files
 config.toml
 .DS_Store
 influx
+timescale

@@ -14,3 +14,14 @@ services:
     volumes:
       - ./influx/data:/var/lib/influxdb2
       - ./influx/config:/etc/influxdb2
+  timescaledb-ha:
+    container_name: timescaledb
+    ports:
+      - 5432:5432
+    volumes:
+      - ./timescale/postgresql.conf:/pgdata/postgresql.conf
+      - ./timescale/data:/pgdata
+    environment:
+      - PGDATA=/pgdata
+      - POSTGRES_PASSWORD=password
+    image: timescale/timescaledb-ha:pg17
