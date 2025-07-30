@@ -1,8 +1,9 @@
 use color_eyre::eyre::Result;
+use modules::{database::IntoGlobalDB, databases::GlobalDB};
 use std::{collections::HashMap, sync::Arc};
 use tokio::{fs::read_to_string, sync::OnceCell};
 
-use crate::{database::IntoGlobalDB, databases::GlobalDB, global_config::GlobalConfig};
+use crate::global_config::GlobalConfig;
 
 pub struct AppState {
     pub databases: HashMap<String, GlobalDB>,

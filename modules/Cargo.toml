@@ -1,0 +1,16 @@
+[package]
+name = "modules"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+aginsensors_core = { version = "0.1.0", path = "../aginsensors_core" }
+async-trait = "0.1.88"
+color-eyre = "0.6.5"
+connector_mqtt = { version = "0.1.0", path = "../connector_mqtt" }
+connector_socketio = { version = "0.1.0", path = "../connector_socketio" }
+database_influx = { version = "0.1.0", path = "../database_influx" }
+paste = "1.0.15"
+schemars = { version = "1.0.4", features = ["preserve_order"] }
+serde = "1.0.219"
+tokio = { version = "1.47.0", features = ["full"] }

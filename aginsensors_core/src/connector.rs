@@ -1,9 +1,6 @@
-use std::collections::HashMap;
-
 use color_eyre::eyre::Result;
+use std::collections::HashMap;
 use tokio::sync::mpsc::Receiver;
-
-use crate::connectors::ConnectorConfig;
 
 #[derive(Debug, Clone)]
 pub struct Measurement {
@@ -11,10 +8,6 @@ pub struct Measurement {
     pub measurement: String,
     pub bucket: Option<String>,
     pub values: HashMap<String, f64>,
-}
-
-pub trait ConnectorBuilder {
-    fn new(config: &ConnectorConfig) -> Self;
 }
 
 pub trait ConnectorRunner {

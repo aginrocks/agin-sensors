@@ -1,3 +1,4 @@
+use aginsensors_core::{database::Database, define_database};
 use async_trait::async_trait;
 use chrono::{DateTime, FixedOffset};
 use color_eyre::{Result, eyre::Context};
@@ -5,12 +6,6 @@ use futures::prelude::*;
 use influxdb2::{
     Client, FromDataPoint,
     models::{DataPoint, Query},
-};
-
-use crate::{
-    database::{Database, IntoGlobalDB},
-    databases::GlobalDB,
-    define_database,
 };
 
 #[derive(Debug, FromDataPoint, Default)]
@@ -61,7 +56,7 @@ impl Database for LocalInflux {
 
     async fn write_measurements(
         &self,
-        measurement: Vec<crate::connector::Measurement>,
+        measurement: Vec<aginsensors_core::connector::Measurement>,
     ) -> color_eyre::eyre::Result<()> {
         let measurement = measurement
             .into_iter()

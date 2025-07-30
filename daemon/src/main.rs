@@ -1,25 +1,19 @@
-mod connector;
-pub mod connectors;
-pub mod database;
-pub mod databases;
 pub mod global_config;
-pub mod macros;
 mod project_config;
 mod schema;
 mod state;
 
-use std::{collections::HashMap, thread, time::Duration};
-
+use aginsensors_core::{connector::Measurement, database::Database};
 use chrono::Local;
 use color_eyre::eyre::{Context, Result};
+use database_influx::{DatabaseTypeInflux, LocalConfigInflux};
+use modules::databases;
+use std::{collections::HashMap, thread, time::Duration};
 use tracing::level_filters::LevelFilter;
 use tracing_error::ErrorLayer;
 use tracing_subscriber::{fmt::format::FmtSpan, layer::SubscriberExt, util::SubscriberInitExt};
 
-use crate::{
-    database::Database, databases::influx::LocalConfigInflux, schema::write_schema,
-    state::get_app_state,
-};
+use crate::{schema::write_schema, state::get_app_state};
 
 #[tokio::main]
 async fn main() -> Result<()> {
@@ -36,13 +30,13 @@ async fn main() -> Result<()> {
     let base = state.databases.get("influx").unwrap();
 
     let db = base.new_local_client(&databases::LocalDBConfig::Influx(LocalConfigInflux {
-        r#type: crate::databases::influx::DatabaseTypeInflux::Value,
+        r#type: DatabaseTypeInflux::Value,
         name: "Influx".to_string(),
         bucket: "test-bucket".to_string(),
     }));
 
     for i in 0..10 {
-        db.write_measurements(vec![connector::Measurement {
+        db.write_measurements(vec![Measurement {
             timestamp: Local::now().timestamp_millis(),
             measurement: "something".to_string(),
             bucket: Some("test-bucket".to_string()),

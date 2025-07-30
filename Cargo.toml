@@ -1,3 +1,10 @@
 [workspace]
 resolver = "2"
-members = ["aginsensors_core", "socketio_connector"]
+members = [
+    "aginsensors_core",
+    "daemon",
+    "database_influx",
+    "modules",
+    "connector_socketio",
+    "connector_mqtt",
+]
