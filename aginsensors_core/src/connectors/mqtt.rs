@@ -11,6 +11,8 @@ define_connector!(
     Mqtt,
     config = {
         pub url: String,
+        pub username: String,
+        pub password: String,
     },
     state = {}
 );

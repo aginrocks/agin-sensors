@@ -52,8 +52,6 @@ macro_rules! define_connector {
             pub struct [<Config$struct_name>] {
                  pub r#type: [<ConnectorType$struct_name>],
 
-                 pub name: String,
-
                  $($config)*
             }
 

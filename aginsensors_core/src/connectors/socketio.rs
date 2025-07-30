@@ -10,7 +10,7 @@ define_connector!(
     "socketio",
     SocketIo,
     config = {
-        pub url: String,
+        pub port: u16,
     },
     state = {}
 );
