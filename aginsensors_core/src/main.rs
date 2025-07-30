@@ -27,9 +27,9 @@ async fn main() -> Result<()> {
 
     init_tracing().wrap_err("failed to set global tracing subscriber")?;
 
-    let state = get_app_state().await;
-
     write_schema().await?;
+
+    let state = get_app_state().await;
 
     println!("Hello, world!");
 
