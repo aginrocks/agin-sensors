@@ -1,9 +1,9 @@
-use std::{collections::HashMap, sync::Arc};
+use std::collections::HashMap;
 
 use color_eyre::eyre::Result;
 use tokio::sync::mpsc::Receiver;
 
-use crate::global_config::GlobalConfig;
+use crate::connectors::{ConnectorConfig, ConnectorType};
 
 #[derive(Debug, Clone)]
 pub struct Measurement {
@@ -14,7 +14,7 @@ pub struct Measurement {
 }
 
 pub trait Connector {
-    fn new(config: &Arc<GlobalConfig>) -> Self;
+    fn new(config: &ConnectorConfig) -> Self;
 
     /// Runs the connector (conencts to a broker, starts a HTTP server, etc.).
     /// Returns a Tokio mpsc channel with Measurement events.

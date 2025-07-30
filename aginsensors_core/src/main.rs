@@ -1,6 +1,16 @@
+mod connector;
+pub mod connectors;
+pub mod database;
+pub mod databases;
+pub mod global_config;
+pub mod macros;
+mod project_config;
+mod schema;
+mod state;
+
 use std::{collections::HashMap, thread, time::Duration};
 
-use chrono::{DateTime, Local};
+use chrono::Local;
 use color_eyre::eyre::{Context, Result};
 use tracing::level_filters::LevelFilter;
 use tracing_error::ErrorLayer;
@@ -10,15 +20,6 @@ use crate::{
     database::Database, databases::influx::LocalConfigInflux, schema::write_schema,
     state::get_app_state,
 };
-
-mod connector;
-pub mod database;
-pub mod databases;
-pub mod global_config;
-pub mod macros;
-mod project_config;
-mod schema;
-mod state;
 
 #[tokio::main]
 async fn main() -> Result<()> {
