@@ -1,8 +1,9 @@
+use std::sync::Arc;
+
 use aginsensors_core::{
     connector::{ConnectorRunner, Measurement},
     define_connector,
 };
-use color_eyre::eyre::Result;
 use tokio::sync::mpsc::Receiver;
 
 define_connector!(
@@ -25,7 +26,7 @@ impl MqttConnector for Mqtt {
 }
 
 impl ConnectorRunner for Mqtt {
-    fn run(&self) -> Result<Receiver<Measurement>> {
+    fn run(&self) -> Arc<Receiver<Vec<Measurement>>> {
         todo!()
     }
 }

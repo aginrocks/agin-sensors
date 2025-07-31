@@ -22,7 +22,7 @@ macro_rules! define_connectors {
             }
 
             impl aginsensors_core::connector::ConnectorRunner for ConnectorType {
-                fn run(&self) -> color_eyre::eyre::Result<tokio::sync::mpsc::Receiver<aginsensors_core::connector::Measurement>> {
+                fn run(&self) -> std::sync::Arc<tokio::sync::mpsc::Receiver<Vec<aginsensors_core::connector::Measurement>>> {
                     match self {
                         $(ConnectorType::$name(connector) => connector.run()),*
                     }
