@@ -1,4 +1,4 @@
-use std::{collections::HashMap, sync::Arc};
+use std::collections::HashMap;
 use tokio::sync::{mpsc::Receiver, oneshot};
 
 #[derive(Debug, Clone)]
@@ -78,7 +78,7 @@ pub trait IntoEvents {
 }
 
 pub trait ConnectorRunner {
-    /// Runs the connector (conencts to a broker, starts a HTTP server, etc.).
-    /// Returns a Tokio mpsc channel with Measurement events.
-    fn run(&self) -> Arc<Receiver<Vec<ConnectorEvent>>>;
+    /// Runs the connector (connects to a broker, starts a HTTP server, etc.).
+    /// Returns a Tokio mpsc receiver for ConnectorEvent batches.
+    fn run(&self) -> tokio::sync::mpsc::Receiver<Vec<ConnectorEvent>>;
 }

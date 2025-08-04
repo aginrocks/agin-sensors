@@ -37,5 +37,5 @@ impl IntoEvents for SingleMeasurement {
 pub async fn handler(Data(measurement): Data<SingleMeasurement>, State(state): State<SocketIo>) {
     let measurement = measurement.into_events();
 
-    state.tx.clone().send(measurement).await.ok();
+    let _ = state.tx.send(measurement).await;
 }

@@ -9,7 +9,7 @@ use color_eyre::eyre::{Context, Result};
 use socketioxide::{SocketIoBuilder, layer::SocketIoLayer};
 use std::sync::Arc;
 use tokio::sync::mpsc::{Receiver, Sender, channel};
-use tracing::error;
+use tracing::{error, info};
 
 use crate::socket::init_io;
 
@@ -21,7 +21,7 @@ define_connector!(
     },
     state = {
         tx: Arc<Sender<Vec<ConnectorEvent>>>,
-        rx: Arc<Receiver<Vec<ConnectorEvent>>>,
+        rx: Arc<std::sync::Mutex<Option<Receiver<Vec<ConnectorEvent>>>>>,
     }
 );
 
@@ -32,17 +32,22 @@ impl SocketIoConnector for SocketIo {
         SocketIo {
             config: config.clone(),
             tx: Arc::new(tx),
-            rx: Arc::new(rx),
+            rx: Arc::new(std::sync::Mutex::new(Some(rx))),
         }
     }
 }
 
 impl ConnectorRunner for SocketIo {
-    fn run(&self) -> Arc<Receiver<Vec<ConnectorEvent>>> {
+    fn run(&self) -> Receiver<Vec<ConnectorEvent>> {
         let mut this = self.clone();
         tokio::spawn(async move { this.serve().await });
 
-        self.rx.clone()
+        // Take the receiver out of the mutex
+        self.rx
+            .lock()
+            .unwrap()
+            .take()
+            .expect("Receiver already taken")
     }
 }
 
@@ -71,7 +76,9 @@ impl SocketIo {
             // .layer(from_fn_with_state(app_state.clone(), require_auth))
             .with_state(app_state); // Provide shared state here
 
-        let listener = tokio::net::TcpListener::bind("0.0.0.0:37581")
+        info!("Starting Socket.IO server on port {}", self.config.port);
+
+        let listener = tokio::net::TcpListener::bind(format!("0.0.0.0:{}", self.config.port))
             .await
             .wrap_err("Failed to bind")?;
 

@@ -3,12 +3,8 @@ mod project_config;
 mod schema;
 mod state;
 
-use aginsensors_core::{connector::Measurement, database::Database};
-use chrono::Local;
+use aginsensors_core::connector::ConnectorRunner;
 use color_eyre::eyre::{Context, Result};
-use database_influx::{DatabaseTypeInflux, LocalConfigInflux};
-use modules::databases;
-use std::{collections::HashMap, thread, time::Duration};
 use tracing::level_filters::LevelFilter;
 use tracing_error::ErrorLayer;
 use tracing_subscriber::{fmt::format::FmtSpan, layer::SubscriberExt, util::SubscriberInitExt};
@@ -25,30 +21,86 @@ async fn main() -> Result<()> {
 
     let state = get_app_state().await;
 
-    println!("Hello, world!");
+    // println!("Hello, world!");
 
-    let base = state.databases.get("influx").unwrap();
+    // let base = state.databases.get("influx").unwrap();
 
-    let db = base.new_local_client(&databases::LocalDBConfig::Influx(LocalConfigInflux {
-        r#type: DatabaseTypeInflux::Value,
-        name: "Influx".to_string(),
-        bucket: "test-bucket".to_string(),
-    }));
+    // let db = base.new_local_client(&databases::LocalDBConfig::Influx(LocalConfigInflux {
+    //     r#type: DatabaseTypeInflux::Value,
+    //     name: "Influx".to_string(),
+    //     bucket: "test-bucket".to_string(),
+    // }));
 
-    for i in 0..10 {
-        db.write_measurements(vec![Measurement {
-            timestamp: Local::now().timestamp_millis(),
-            measurement: "something".to_string(),
-            // bucket: Some("test-bucket".to_string()),
-            values: HashMap::from([("value".to_string(), (i as f64))]),
-        }])
-        .await?;
-        thread::sleep(Duration::from_millis(1));
+    // for i in 0..10 {
+    //     db.write_measurements(vec![Measurement {
+    //         timestamp: Local::now().timestamp_millis(),
+    //         measurement: "something".to_string(),
+    //         // bucket: Some("test-bucket".to_string()),
+    //         values: HashMap::from([("value".to_string(), (i as f64))]),
+    //     }])
+    //     .await?;
+    //     thread::sleep(Duration::from_millis(1));
+    // }
+
+    // let mesurement = db.get_last_measurement().await?;
+
+    dbg!(&state.connectors);
+
+    // Initialize all connectors and collect their receivers
+    let mut connector_tasks = Vec::new();
+
+    for (name, connector) in &state.connectors {
+        tracing::info!("Initializing connector: {}", name);
+        let mut receiver = connector.run();
+        let connector_name = name.clone();
+
+        // Spawn a task to handle events from this connector
+        let task = tokio::spawn(async move {
+            while let Some(events) = receiver.recv().await {
+                tracing::info!(
+                    "Received {} events from connector '{}'",
+                    events.len(),
+                    connector_name
+                );
+
+                for event in events {
+                    match &event.body {
+                        aginsensors_core::connector::ConnectorEventBody::Measurement(
+                            measurement,
+                        ) => {
+                            tracing::info!(
+                                "Measurement from '{}': {} = {:?} at {}",
+                                connector_name,
+                                measurement.measurement,
+                                measurement.values,
+                                measurement.timestamp
+                            );
+                        }
+                        aginsensors_core::connector::ConnectorEventBody::ReadRequest(
+                            read_request,
+                        ) => {
+                            tracing::info!(
+                                "Read request from '{}': {:?}",
+                                connector_name,
+                                read_request
+                            );
+                        }
+                    }
+                }
+            }
+        });
+
+        connector_tasks.push(task);
     }
 
-    let mesurement = db.get_last_measurement().await?;
+    tracing::info!("All connectors initialized, listening for events...");
 
-    dbg!(mesurement);
+    // Wait for all connector tasks to complete (they run indefinitely)
+    for task in connector_tasks {
+        if let Err(e) = task.await {
+            tracing::error!("Connector task failed: {:?}", e);
+        }
+    }
 
     Ok(())
 }

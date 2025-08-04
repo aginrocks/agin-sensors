@@ -59,7 +59,7 @@ pub struct GroupedMeasurement {
 pub async fn handler(ack: AckSender, Data(batch): Data<Batch>, State(state): State<SocketIo>) {
     let measurements = batch.into_events();
 
-    if state.tx.clone().send(measurements).await.is_ok() {
+    if state.tx.send(measurements).await.is_ok() {
         ack.send("OK").ok();
     }
 }

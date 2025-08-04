@@ -1,5 +1,3 @@
-use std::sync::Arc;
-
 use aginsensors_core::{
     connector::{ConnectorEvent, ConnectorRunner},
     define_connector,
@@ -26,7 +24,7 @@ impl MqttConnector for Mqtt {
 }
 
 impl ConnectorRunner for Mqtt {
-    fn run(&self) -> Arc<Receiver<Vec<ConnectorEvent>>> {
+    fn run(&self) -> Receiver<Vec<ConnectorEvent>> {
         todo!()
     }
 }
