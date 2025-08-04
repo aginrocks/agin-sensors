@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use aginsensors_core::connector::{IntoMeasurements, Measurement};
+use aginsensors_core::connector::{ConnectorEvent, EventMetadata, IntoEvents, Measurement};
 use serde::Deserialize;
 use socketioxide::extract::{AckSender, Data, State};
 
@@ -15,17 +15,23 @@ pub struct Batch {
     pub groups: Vec<Group>,
 }
 
-impl IntoMeasurements for Batch {
-    fn into_measurements(self) -> Vec<Measurement> {
+impl IntoEvents for Batch {
+    fn into_events(self) -> Vec<ConnectorEvent> {
         self.groups
             .into_iter()
             .flat_map(|group| {
                 let bucket = self.bucket.clone();
-                group.values.into_iter().map(move |value| Measurement {
-                    timestamp: group.timestamp,
-                    measurement: value.measurement,
-                    bucket: Some(bucket.clone()),
-                    values: value.values,
+                let metadata = EventMetadata::builder().bucket(bucket);
+
+                group.values.into_iter().map(move |value| {
+                    ConnectorEvent::new_measurement(
+                        Measurement {
+                            timestamp: group.timestamp,
+                            measurement: value.measurement,
+                            values: value.values,
+                        },
+                        metadata.clone(),
+                    )
                 })
             })
             .collect::<Vec<_>>()
@@ -51,7 +57,7 @@ pub struct GroupedMeasurement {
 }
 
 pub async fn handler(ack: AckSender, Data(batch): Data<Batch>, State(state): State<SocketIo>) {
-    let measurements = batch.into_measurements();
+    let measurements = batch.into_events();
 
     if state.tx.clone().send(measurements).await.is_ok() {
         ack.send("OK").ok();

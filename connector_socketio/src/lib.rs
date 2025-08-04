@@ -1,7 +1,7 @@
 mod socket;
 
 use aginsensors_core::{
-    connector::{ConnectorRunner, Measurement},
+    connector::{ConnectorEvent, ConnectorRunner},
     define_connector,
 };
 use axum::{Router, http::StatusCode, response::IntoResponse, routing::get};
@@ -20,14 +20,14 @@ define_connector!(
         pub port: u16,
     },
     state = {
-        tx: Arc<Sender<Vec<Measurement>>>,
-        rx: Arc<Receiver<Vec<Measurement>>>,
+        tx: Arc<Sender<Vec<ConnectorEvent>>>,
+        rx: Arc<Receiver<Vec<ConnectorEvent>>>,
     }
 );
 
 impl SocketIoConnector for SocketIo {
     fn new(config: &ConfigSocketIo) -> Self {
-        let (tx, rx) = channel::<Vec<Measurement>>(1000);
+        let (tx, rx) = channel::<Vec<ConnectorEvent>>(1000);
 
         SocketIo {
             config: config.clone(),
@@ -38,7 +38,7 @@ impl SocketIoConnector for SocketIo {
 }
 
 impl ConnectorRunner for SocketIo {
-    fn run(&self) -> Arc<Receiver<Vec<Measurement>>> {
+    fn run(&self) -> Arc<Receiver<Vec<ConnectorEvent>>> {
         let mut this = self.clone();
         tokio::spawn(async move { this.serve().await });
 

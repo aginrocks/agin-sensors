@@ -39,7 +39,7 @@ async fn main() -> Result<()> {
         db.write_measurements(vec![Measurement {
             timestamp: Local::now().timestamp_millis(),
             measurement: "something".to_string(),
-            bucket: Some("test-bucket".to_string()),
+            // bucket: Some("test-bucket".to_string()),
             values: HashMap::from([("value".to_string(), (i as f64))]),
         }])
         .await?;
