@@ -1,5 +1,5 @@
-use std::collections::HashMap;
-use tokio::sync::{mpsc::Receiver, oneshot};
+use std::{collections::HashMap, sync::Arc};
+use tokio::sync::oneshot;
 
 #[derive(Debug, Clone)]
 pub struct Measurement {
@@ -8,9 +8,9 @@ pub struct Measurement {
     pub values: HashMap<String, f64>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum ReadRequest {
-    LastMeasurement { sender: oneshot::Sender<i64> },
+    LastMeasurement { sender: Arc<oneshot::Sender<i64>> },
 }
 
 #[derive(Debug, Clone)]
@@ -45,16 +45,16 @@ impl EventMetadata {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct ConnectorEvent {
     pub body: ConnectorEventBody,
     pub metadata: EventMetadata,
 }
 
 impl ConnectorEvent {
-    pub fn new_measurement(measurement: Measurement, metadata: EventMetadata) -> Self {
+    pub fn new_measurements(measurements: Vec<Measurement>, metadata: EventMetadata) -> Self {
         ConnectorEvent {
-            body: ConnectorEventBody::Measurement(measurement),
+            body: ConnectorEventBody::Measurements(measurements),
             metadata,
         }
     }
@@ -67,9 +67,9 @@ impl ConnectorEvent {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum ConnectorEventBody {
-    Measurement(Measurement),
+    Measurements(Vec<Measurement>),
     ReadRequest(ReadRequest),
 }
 
@@ -80,5 +80,5 @@ pub trait IntoEvents {
 pub trait ConnectorRunner {
     /// Runs the connector (connects to a broker, starts a HTTP server, etc.).
     /// Returns a Tokio mpsc receiver for ConnectorEvent batches.
-    fn run(&self) -> tokio::sync::mpsc::Receiver<Vec<ConnectorEvent>>;
+    fn run(&self) -> tokio::sync::mpsc::Receiver<ConnectorEvent>;
 }

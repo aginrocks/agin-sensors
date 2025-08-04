@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, ops::Deref};
 
 use aginsensors_core::connector::{ConnectorEvent, EventMetadata, IntoEvents, Measurement};
 use serde::Deserialize;
@@ -22,12 +22,12 @@ impl IntoEvents for SingleMeasurement {
     fn into_events(self) -> Vec<ConnectorEvent> {
         let metadata = EventMetadata::builder().bucket(self.bucket);
 
-        vec![ConnectorEvent::new_measurement(
-            Measurement {
+        vec![ConnectorEvent::new_measurements(
+            vec![Measurement {
                 timestamp: self.timestamp,
                 measurement: self.measurement,
                 values: self.values,
-            },
+            }],
             metadata,
         )]
     }
@@ -37,5 +37,5 @@ impl IntoEvents for SingleMeasurement {
 pub async fn handler(Data(measurement): Data<SingleMeasurement>, State(state): State<SocketIo>) {
     let measurement = measurement.into_events();
 
-    let _ = state.tx.send(measurement).await;
+    let _ = state.tx.send(measurement.first().unwrap().to_owned()).await;
 }

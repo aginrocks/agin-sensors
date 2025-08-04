@@ -20,14 +20,14 @@ define_connector!(
         pub port: u16,
     },
     state = {
-        tx: Arc<Sender<Vec<ConnectorEvent>>>,
-        rx: Arc<std::sync::Mutex<Option<Receiver<Vec<ConnectorEvent>>>>>,
+        tx: Arc<Sender<ConnectorEvent>>,
+        rx: Arc<std::sync::Mutex<Option<Receiver<ConnectorEvent>>>>,
     }
 );
 
 impl SocketIoConnector for SocketIo {
     fn new(config: &ConfigSocketIo) -> Self {
-        let (tx, rx) = channel::<Vec<ConnectorEvent>>(1000);
+        let (tx, rx) = channel::<ConnectorEvent>(1000);
 
         SocketIo {
             config: config.clone(),
@@ -38,7 +38,7 @@ impl SocketIoConnector for SocketIo {
 }
 
 impl ConnectorRunner for SocketIo {
-    fn run(&self) -> Receiver<Vec<ConnectorEvent>> {
+    fn run(&self) -> Receiver<ConnectorEvent> {
         let mut this = self.clone();
         tokio::spawn(async move { this.serve().await });
 

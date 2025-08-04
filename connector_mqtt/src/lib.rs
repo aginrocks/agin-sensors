@@ -24,7 +24,7 @@ impl MqttConnector for Mqtt {
 }
 
 impl ConnectorRunner for Mqtt {
-    fn run(&self) -> Receiver<Vec<ConnectorEvent>> {
+    fn run(&self) -> Receiver<ConnectorEvent> {
         todo!()
     }
 }

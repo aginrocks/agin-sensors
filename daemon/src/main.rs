@@ -56,35 +56,27 @@ async fn main() -> Result<()> {
 
         // Spawn a task to handle events from this connector
         let task = tokio::spawn(async move {
-            while let Some(events) = receiver.recv().await {
-                tracing::info!(
-                    "Received {} events from connector '{}'",
-                    events.len(),
-                    connector_name
-                );
+            while let Some(event) = receiver.recv().await {
+                tracing::info!("Received event from connector '{}'", connector_name);
 
-                for event in events {
-                    match &event.body {
-                        aginsensors_core::connector::ConnectorEventBody::Measurement(
-                            measurement,
-                        ) => {
+                match &event.body {
+                    aginsensors_core::connector::ConnectorEventBody::Measurements(measurements) => {
+                        for measurement in measurements {
                             tracing::info!(
-                                "Measurement from '{}': {} = {:?} at {}",
+                                "Measurements from '{}': {} = {:?} at {}",
                                 connector_name,
                                 measurement.measurement,
                                 measurement.values,
                                 measurement.timestamp
                             );
                         }
-                        aginsensors_core::connector::ConnectorEventBody::ReadRequest(
-                            read_request,
-                        ) => {
-                            tracing::info!(
-                                "Read request from '{}': {:?}",
-                                connector_name,
-                                read_request
-                            );
-                        }
+                    }
+                    aginsensors_core::connector::ConnectorEventBody::ReadRequest(read_request) => {
+                        tracing::info!(
+                            "Read request from '{}': {:?}",
+                            connector_name,
+                            read_request
+                        );
                     }
                 }
             }
