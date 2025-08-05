@@ -5,6 +5,8 @@ mod state;
 
 use aginsensors_core::connector::ConnectorRunner;
 use color_eyre::eyre::{Context, Result};
+use database_influx::{DatabaseTypeInflux, LocalConfigInflux};
+use modules::databases;
 use tracing::level_filters::LevelFilter;
 use tracing_error::ErrorLayer;
 use tracing_subscriber::{fmt::format::FmtSpan, layer::SubscriberExt, util::SubscriberInitExt};
@@ -13,6 +15,9 @@ use crate::{schema::write_schema, state::get_app_state};
 
 #[tokio::main]
 async fn main() -> Result<()> {
+    // Load environment variables from .env file
+    dotenvy::dotenv().ok();
+
     color_eyre::install()?;
 
     init_tracing().wrap_err("failed to set global tracing subscriber")?;
@@ -24,12 +29,6 @@ async fn main() -> Result<()> {
     // println!("Hello, world!");
 
     // let base = state.databases.get("influx").unwrap();
-
-    // let db = base.new_local_client(&databases::LocalDBConfig::Influx(LocalConfigInflux {
-    //     r#type: DatabaseTypeInflux::Value,
-    //     name: "Influx".to_string(),
-    //     bucket: "test-bucket".to_string(),
-    // }));
 
     // for i in 0..10 {
     //     db.write_measurements(vec![Measurement {

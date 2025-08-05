@@ -1,6 +1,7 @@
 use color_eyre::eyre::Result;
 use modules::connector::ConnectorBuilder;
 use modules::{connectors::ConnectorType, database::IntoGlobalDB, databases::GlobalDB};
+use std::path::Path;
 use std::{collections::HashMap, sync::Arc};
 use tokio::{fs::read_to_string, sync::OnceCell};
 
@@ -13,7 +14,21 @@ pub struct AppState {
 
 impl AppState {
     pub async fn try_load() -> Result<Arc<Self>> {
-        let config = read_to_string("global.yaml").await?;
+        let global_config_path =
+            Path::new(&std::env::var("CONFIG_FOLDER_PATH").unwrap_or_else(|_| {
+                tracing::warn!("CONFIG_FOLDER_PATH not set, using default...");
+                "config".to_string()
+            }))
+            .join("global.yaml");
+
+        if !global_config_path.exists() {
+            return Err(color_eyre::eyre::eyre!(
+                "Global config file not found at: {}",
+                global_config_path.display()
+            ));
+        }
+
+        let config = read_to_string(&global_config_path).await?;
 
         let parsed_config: GlobalConfig = serde_yaml::from_str(&config)
             .map_err(|e| color_eyre::eyre::eyre!("Failed to parse global config: {}", e))?;
