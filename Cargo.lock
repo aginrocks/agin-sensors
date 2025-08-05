@@ -373,6 +373,7 @@ dependencies = [
  "database_influx",
  "dotenvy",
  "modules",
+ "paste",
  "schemars",
  "serde",
  "serde_json",

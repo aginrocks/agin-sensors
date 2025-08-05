@@ -1,7 +1,7 @@
 use color_eyre::eyre::Result;
 use modules::connector::ConnectorBuilder;
 use modules::{connectors::ConnectorType, database::IntoGlobalDB, databases::GlobalDB};
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::{collections::HashMap, sync::Arc};
 use tokio::{fs::read_to_string, sync::OnceCell};
 
@@ -10,16 +10,19 @@ use crate::global_config::GlobalConfig;
 pub struct AppState {
     pub databases: HashMap<String, GlobalDB>,
     pub connectors: HashMap<String, ConnectorType>,
+    pub config_folder_path: PathBuf,
 }
 
 impl AppState {
     pub async fn try_load() -> Result<Arc<Self>> {
-        let global_config_path =
+        let config_folder_path =
             Path::new(&std::env::var("CONFIG_FOLDER_PATH").unwrap_or_else(|_| {
                 tracing::warn!("CONFIG_FOLDER_PATH not set, using default...");
                 "config".to_string()
             }))
-            .join("global.yaml");
+            .to_owned();
+
+        let global_config_path = config_folder_path.join("global.yaml");
 
         if !global_config_path.exists() {
             return Err(color_eyre::eyre::eyre!(
@@ -50,6 +53,7 @@ impl AppState {
         Ok(Arc::new(AppState {
             databases,
             connectors,
+            config_folder_path,
         }))
     }
 }

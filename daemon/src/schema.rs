@@ -1,7 +1,9 @@
 use color_eyre::eyre::Result;
 use schemars::schema_for;
 
-use crate::{global_config::GlobalConfig, project_config::ProjectConfig};
+use crate::{
+    global_config::GlobalConfig, organizations::OrganizationsState, project_config::ProjectConfig,
+};
 
 pub async fn write_schema() -> Result<()> {
     let global_schema = schema_for!(GlobalConfig);
@@ -13,6 +15,11 @@ pub async fn write_schema() -> Result<()> {
     let project_schema = serde_json::to_string(&project_schema)?;
 
     tokio::fs::write("project_schema.json", project_schema).await?;
+
+    let organizations_schema = schema_for!(OrganizationsState);
+    let organizations_schema = serde_json::to_string(&organizations_schema)?;
+
+    tokio::fs::write("organizations_schema.json", organizations_schema).await?;
 
     Ok(())
 }

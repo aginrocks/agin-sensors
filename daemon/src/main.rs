@@ -1,4 +1,5 @@
 pub mod global_config;
+mod organizations;
 mod project_config;
 mod schema;
 mod state;
@@ -15,8 +16,7 @@ use crate::{schema::write_schema, state::get_app_state};
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    // Load environment variables from .env file
-    dotenvy::dotenv().ok();
+    dotenvy::dotenv()?;
 
     color_eyre::install()?;
 
