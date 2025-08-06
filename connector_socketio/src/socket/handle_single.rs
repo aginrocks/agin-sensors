@@ -1,4 +1,4 @@
-use std::{collections::HashMap, ops::Deref};
+use std::collections::HashMap;
 
 use aginsensors_core::connector::{ConnectorEvent, EventMetadata, IntoEvents, Measurement};
 use serde::Deserialize;

@@ -11,6 +11,9 @@ macro_rules! define_connector {
             pub struct $struct_name {
                 pub config: [<Config$struct_name>],
 
+                tx: std::sync::Arc<tokio::sync::mpsc::Sender<aginsensors_core::connector::ConnectorEvent>>,
+                rx: std::sync::Arc<std::sync::Mutex<Option<tokio::sync::mpsc::Receiver<aginsensors_core::connector::ConnectorEvent>>>>,
+
                 $($state)*
             }
 

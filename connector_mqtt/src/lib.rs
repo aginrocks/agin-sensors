@@ -29,10 +29,7 @@ define_connector!(
         pub format: MqttFormat,
         pub topic: Option<String>,
     },
-    state = {
-        tx: Arc<Sender<ConnectorEvent>>,
-        rx: Arc<std::sync::Mutex<Option<Receiver<ConnectorEvent>>>>,
-    }
+    state = {}
 );
 
 impl MqttConnector for Mqtt {
@@ -100,7 +97,7 @@ impl Mqtt {
         match event {
             Event::Incoming(Packet::Publish(publish)) => {
                 let (measurements, metadata) = match self.config.format {
-                    MqttFormat::BeanAir => beanair::parse(),
+                    MqttFormat::BeanAir => beanair::parse(publish),
                 }?;
 
                 Ok(ConnectorEvent::new_measurements(measurements, metadata))

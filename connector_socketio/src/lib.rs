@@ -8,7 +8,7 @@ use axum::{Router, http::StatusCode, response::IntoResponse, routing::get};
 use color_eyre::eyre::{Context, Result};
 use socketioxide::{SocketIoBuilder, layer::SocketIoLayer};
 use std::sync::Arc;
-use tokio::sync::mpsc::{Receiver, Sender, channel};
+use tokio::sync::mpsc::{Receiver, channel};
 use tracing::{error, info};
 
 use crate::socket::init_io;
@@ -19,10 +19,7 @@ define_connector!(
     config = {
         pub port: u16,
     },
-    state = {
-        tx: Arc<Sender<ConnectorEvent>>,
-        rx: Arc<std::sync::Mutex<Option<Receiver<ConnectorEvent>>>>,
-    }
+    state = {}
 );
 
 impl SocketIoConnector for SocketIo {

@@ -73,7 +73,7 @@ pub async fn handler(ack: AckSender, Data(batch): Data<Batch>, State(state): Sta
     let measurements = batch.into_events();
 
     for measurement in measurements {
-        state.tx.send(measurement).await;
+        let _ = state.tx.send(measurement).await;
     }
     ack.send("OK").ok();
 }
