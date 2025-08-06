@@ -12,8 +12,8 @@ connectors:
   socketio1:
     type: socketio
     port: 3001
-  # mqtt:
-  #   type: mqtt
-  #   url: mqtt://localhost:1883
-  #   username: mqtt_user
-  #   password: mqtt_password
+  mqtt:
+    type: mqtt
+    host: localhost
+    port: 1883
+    format: beanair

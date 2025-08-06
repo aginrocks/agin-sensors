@@ -10,7 +10,7 @@ use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 use tokio::sync::mpsc::{Receiver, channel};
-use tracing::warn;
+use tracing::{info, warn};
 
 #[derive(Serialize, Deserialize, JsonSchema, Clone, Debug)]
 #[serde(rename_all = "lowercase")]
@@ -92,6 +92,8 @@ impl Mqtt {
         let parsed = self
             .parse_event(&event)
             .wrap_err("Failed to parse MQTT event")?;
+
+        info!("Parsed event");
 
         self.tx.send(parsed).await?;
 
