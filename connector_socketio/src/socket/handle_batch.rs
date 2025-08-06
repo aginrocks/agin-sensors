@@ -19,20 +19,33 @@ impl IntoEvents for Batch {
     fn into_events(self) -> Vec<ConnectorEvent> {
         self.groups
             .into_iter()
-            .flat_map(|group| {
+            .map(|group| {
                 let bucket = self.bucket.clone();
                 let metadata = EventMetadata::builder().bucket(bucket);
 
-                group.values.into_iter().map(move |value| {
-                    ConnectorEvent::new_measurement(
-                        Measurement {
+                ConnectorEvent::new_measurements(
+                    group
+                        .values
+                        .into_iter()
+                        .map(|value| Measurement {
                             timestamp: group.timestamp,
                             measurement: value.measurement,
                             values: value.values,
-                        },
-                        metadata.clone(),
-                    )
-                })
+                        })
+                        .collect(),
+                    metadata,
+                )
+
+                // group.values.into_iter().map(move |value| {
+                //     ConnectorEvent::new_measurements(
+                //         Measurement {
+                //             timestamp: group.timestamp,
+                //             measurement: value.measurement,
+                //             values: value.values,
+                //         },
+                //         metadata.clone(),
+                //     )
+                // })
             })
             .collect::<Vec<_>>()
     }
@@ -59,7 +72,8 @@ pub struct GroupedMeasurement {
 pub async fn handler(ack: AckSender, Data(batch): Data<Batch>, State(state): State<SocketIo>) {
     let measurements = batch.into_events();
 
-    if state.tx.clone().send(measurements).await.is_ok() {
-        ack.send("OK").ok();
+    for measurement in measurements {
+        state.tx.send(measurement).await;
     }
+    ack.send("OK").ok();
 }

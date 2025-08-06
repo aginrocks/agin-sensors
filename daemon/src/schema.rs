@@ -1,3 +1,4 @@
+use aginsensors_core::organizations::OrganizationsState;
 use color_eyre::eyre::Result;
 use schemars::schema_for;
 
@@ -13,6 +14,11 @@ pub async fn write_schema() -> Result<()> {
     let project_schema = serde_json::to_string(&project_schema)?;
 
     tokio::fs::write("project_schema.json", project_schema).await?;
+
+    let organizations_schema = schema_for!(OrganizationsState);
+    let organizations_schema = serde_json::to_string(&organizations_schema)?;
+
+    tokio::fs::write("organizations_schema.json", organizations_schema).await?;
 
     Ok(())
 }

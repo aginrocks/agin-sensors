@@ -1,5 +1,8 @@
+use color_eyre::eyre::Result;
 use std::{collections::HashMap, sync::Arc};
-use tokio::sync::{mpsc::Receiver, oneshot};
+use tokio::sync::oneshot;
+
+use crate::organizations::{Organization, OrganizationsState};
 
 #[derive(Debug, Clone)]
 pub struct Measurement {
@@ -8,9 +11,9 @@ pub struct Measurement {
     pub values: HashMap<String, f64>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum ReadRequest {
-    LastMeasurement { sender: oneshot::Sender<i64> },
+    LastMeasurement { sender: Arc<oneshot::Sender<i64>> },
 }
 
 #[derive(Debug, Clone)]
@@ -59,16 +62,22 @@ impl EventMetadata {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct ConnectorEvent {
     pub body: ConnectorEventBody,
     pub metadata: EventMetadata,
 }
 
+#[derive(Debug, Clone)]
+pub struct FilteredConnectorEvent {
+    pub body: ConnectorEventBody,
+    pub organizations: Vec<Organization>,
+}
+
 impl ConnectorEvent {
-    pub fn new_measurement(measurement: Measurement, metadata: EventMetadata) -> Self {
+    pub fn new_measurements(measurements: Vec<Measurement>, metadata: EventMetadata) -> Self {
         ConnectorEvent {
-            body: ConnectorEventBody::Measurement(measurement),
+            body: ConnectorEventBody::Measurements(measurements),
             metadata,
         }
     }
@@ -79,11 +88,37 @@ impl ConnectorEvent {
             metadata,
         }
     }
+
+    pub fn filter(&self, organizations: &OrganizationsState) -> Result<FilteredConnectorEvent> {
+        if let Some(bucket) = &self.metadata.bucket {
+            let matching_orgs: Vec<Organization> = organizations
+                .organizations
+                .iter()
+                .filter_map(|(_, org)| {
+                    if org.bucket == *bucket {
+                        Some(org.clone())
+                    } else {
+                        None
+                    }
+                })
+                .collect();
+            {
+                return Ok(FilteredConnectorEvent {
+                    body: self.body.clone(),
+                    organizations: matching_orgs,
+                });
+            }
+        }
+
+        Err(color_eyre::eyre::eyre!(
+            "Couldn't find organization for event",
+        ))
+    }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum ConnectorEventBody {
-    Measurement(Measurement),
+    Measurements(Vec<Measurement>),
     ReadRequest(ReadRequest),
 }
 
@@ -92,7 +127,7 @@ pub trait IntoEvents {
 }
 
 pub trait ConnectorRunner {
-    /// Runs the connector (conencts to a broker, starts a HTTP server, etc.).
-    /// Returns a Tokio mpsc channel with Measurement events.
-    fn run(&self) -> Arc<Receiver<Vec<ConnectorEvent>>>;
+    /// Runs the connector (connects to a broker, starts a HTTP server, etc.).
+    /// Returns a Tokio mpsc receiver for ConnectorEvent batches.
+    fn run(&self) -> tokio::sync::mpsc::Receiver<ConnectorEvent>;
 }

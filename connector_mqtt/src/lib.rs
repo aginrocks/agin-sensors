@@ -30,29 +30,33 @@ define_connector!(
         pub topic: Option<String>,
     },
     state = {
-        tx: Arc<Sender<Vec<ConnectorEvent>>>,
-        rx: Arc<Receiver<Vec<ConnectorEvent>>>,
+        tx: Arc<Sender<ConnectorEvent>>,
+        rx: Arc<std::sync::Mutex<Option<Receiver<ConnectorEvent>>>>,
     }
 );
 
 impl MqttConnector for Mqtt {
     fn new(config: &ConfigMqtt) -> Self {
-        let (tx, rx) = channel::<Vec<ConnectorEvent>>(1000);
+        let (tx, rx) = channel::<ConnectorEvent>(1000);
 
         Mqtt {
             config: config.clone(),
             tx: Arc::new(tx),
-            rx: Arc::new(rx),
+            rx: Arc::new(std::sync::Mutex::new(Some(rx))),
         }
     }
 }
 
 impl ConnectorRunner for Mqtt {
-    fn run(&self) -> Arc<Receiver<Vec<ConnectorEvent>>> {
+    fn run(&self) -> Receiver<ConnectorEvent> {
         let this = self.clone();
         tokio::spawn(async move { this.listen().await });
 
-        self.rx.clone()
+        self.rx
+            .lock()
+            .unwrap()
+            .take()
+            .expect("Receiver already taken")
     }
 }
 
@@ -87,7 +91,7 @@ impl Mqtt {
             .parse_event(&event)
             .wrap_err("Failed to parse MQTT event")?;
 
-        self.tx.send(vec![parsed]).await?;
+        self.tx.send(parsed).await?;
 
         Ok(())
     }
@@ -99,7 +103,10 @@ impl Mqtt {
                     MqttFormat::BeanAir => beanair::parse(),
                 }?;
 
-                Ok(ConnectorEvent::new_measurement(measurement, metadata))
+                Ok(ConnectorEvent::new_measurements(
+                    vec![measurement],
+                    metadata,
+                ))
             }
             _ => bail!("Unsupported MQTT event type"),
         }
