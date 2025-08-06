@@ -15,8 +15,16 @@ pub enum ReadRequest {
 
 #[derive(Debug, Clone)]
 pub struct EventMetadata {
+    /// Bucket that the data needs to be written to
     pub bucket: Option<String>,
+
+    /// Topic from which the data is received (e.g. MQTT topic)
     pub topic: Option<String>,
+
+    /// Sensor's MAC address or other unique identifier
+    pub mac: Option<String>,
+
+    /// Token used by the sensor
     pub auth_token: Option<String>,
 }
 
@@ -25,6 +33,7 @@ impl EventMetadata {
         Self {
             bucket: None,
             topic: None,
+            mac: None,
             auth_token: None,
         }
     }
@@ -41,6 +50,11 @@ impl EventMetadata {
 
     pub fn auth_token(mut self, auth_token: String) -> Self {
         self.auth_token = Some(auth_token);
+        self
+    }
+
+    pub fn mac(mut self, mac: String) -> Self {
+        self.mac = Some(mac);
         self
     }
 }
