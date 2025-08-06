@@ -1,4 +1,3 @@
-mod filters;
 pub mod global_config;
 mod project_config;
 mod schema;
@@ -61,15 +60,26 @@ async fn main() -> Result<()> {
             while let Some(event) = receiver.recv().await {
                 tracing::info!("Received event from connector '{}'", connector_name);
 
+                let event = event.filter(organizations_state);
+
+                let event = match event {
+                    Ok(event) => event,
+                    Err(e) => {
+                        tracing::error!("Error filtering event: {:?}", e);
+                        continue;
+                    }
+                };
+
                 match &event.body {
                     aginsensors_core::connector::ConnectorEventBody::Measurements(measurements) => {
                         for measurement in measurements {
                             tracing::info!(
-                                "Measurements from '{}': {} = {:?} at {}",
+                                "Measurements from '{}': {} = {:?} at {} form organization {:?}",
                                 connector_name,
                                 measurement.measurement,
                                 measurement.values,
-                                measurement.timestamp
+                                measurement.timestamp,
+                                event.organizations,
                             );
                         }
                     }

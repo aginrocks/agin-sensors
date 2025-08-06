@@ -1,7 +1,8 @@
+use color_eyre::eyre::Result;
 use std::{collections::HashMap, sync::Arc};
 use tokio::sync::oneshot;
 
-use crate::organizations::OrganizationsState;
+use crate::organizations::{Organization, OrganizationsState};
 
 #[derive(Debug, Clone)]
 pub struct Measurement {
@@ -53,6 +54,12 @@ pub struct ConnectorEvent {
     pub metadata: EventMetadata,
 }
 
+#[derive(Debug, Clone)]
+pub struct FilteredConnectorEvent {
+    pub body: ConnectorEventBody,
+    pub organizations: Vec<Organization>,
+}
+
 impl ConnectorEvent {
     pub fn new_measurements(measurements: Vec<Measurement>, metadata: EventMetadata) -> Self {
         ConnectorEvent {
@@ -66,6 +73,32 @@ impl ConnectorEvent {
             body: ConnectorEventBody::ReadRequest(read_request),
             metadata,
         }
+    }
+
+    pub fn filter(&self, organizations: &OrganizationsState) -> Result<FilteredConnectorEvent> {
+        if let Some(bucket) = &self.metadata.bucket {
+            let matching_orgs: Vec<Organization> = organizations
+                .organizations
+                .iter()
+                .filter_map(|(_, org)| {
+                    if org.bucket == *bucket {
+                        Some(org.clone())
+                    } else {
+                        None
+                    }
+                })
+                .collect();
+            {
+                return Ok(FilteredConnectorEvent {
+                    body: self.body.clone(),
+                    organizations: matching_orgs,
+                });
+            }
+        }
+
+        Err(color_eyre::eyre::eyre!(
+            "Couldn't find organization for event",
+        ))
     }
 }
 
@@ -83,8 +116,4 @@ pub trait ConnectorRunner {
     /// Runs the connector (connects to a broker, starts a HTTP server, etc.).
     /// Returns a Tokio mpsc receiver for ConnectorEvent batches.
     fn run(&self) -> tokio::sync::mpsc::Receiver<ConnectorEvent>;
-}
-
-impl Measurement {
-    pub fn filter(organizations: &'static Arc<OrganizationsState>) {}
 }
