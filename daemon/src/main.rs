@@ -1,5 +1,5 @@
+mod filters;
 pub mod global_config;
-mod organizations;
 mod project_config;
 mod schema;
 mod state;
@@ -25,6 +25,9 @@ async fn main() -> Result<()> {
     write_schema().await?;
 
     let state = get_app_state().await;
+
+    let organizations_state =
+        aginsensors_core::organizations::get_app_state(state.config_folder_path.clone()).await;
 
     // println!("Hello, world!");
 

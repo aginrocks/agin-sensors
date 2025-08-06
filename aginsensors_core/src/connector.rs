@@ -1,6 +1,8 @@
 use std::{collections::HashMap, sync::Arc};
 use tokio::sync::oneshot;
 
+use crate::organizations::OrganizationsState;
+
 #[derive(Debug, Clone)]
 pub struct Measurement {
     pub timestamp: i64,
@@ -81,4 +83,8 @@ pub trait ConnectorRunner {
     /// Runs the connector (connects to a broker, starts a HTTP server, etc.).
     /// Returns a Tokio mpsc receiver for ConnectorEvent batches.
     fn run(&self) -> tokio::sync::mpsc::Receiver<ConnectorEvent>;
+}
+
+impl Measurement {
+    pub fn filter(organizations: &'static Arc<OrganizationsState>) {}
 }

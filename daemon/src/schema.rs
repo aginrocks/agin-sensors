@@ -1,9 +1,8 @@
+use aginsensors_core::organizations::OrganizationsState;
 use color_eyre::eyre::Result;
 use schemars::schema_for;
 
-use crate::{
-    global_config::GlobalConfig, organizations::OrganizationsState, project_config::ProjectConfig,
-};
+use crate::{global_config::GlobalConfig, project_config::ProjectConfig};
 
 pub async fn write_schema() -> Result<()> {
     let global_schema = schema_for!(GlobalConfig);

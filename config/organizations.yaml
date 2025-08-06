@@ -1,1 +1,16 @@
+# yaml-language-server: $schema=https://github.com/aginrocks/agin-sensors/raw/refs/heads/main/organizations_schema.json
 
+organizations:
+  org1:
+    id: org1
+    name: Organization One
+    bucket: org1_bucket
+    filters:
+      - type: macs
+        macs:
+          - 00:11:22:33:44:55
+          - 66:77:88:99:AA:BB
+      - type: tokens
+        tokens:
+          - token1
+          - token2

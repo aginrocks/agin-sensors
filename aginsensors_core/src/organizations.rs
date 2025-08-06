@@ -1,7 +1,7 @@
 use std::{collections::HashMap, path::PathBuf, sync::Arc};
 
 use color_eyre::eyre::Result;
-use tokio::fs::read_to_string;
+use tokio::{fs::read_to_string, sync::OnceCell};
 
 macro_rules! define_filter {
     ($tag_value:literal, $struct_name:ident { $($field:tt)* }) => {
@@ -35,6 +35,7 @@ pub enum Filter {
 pub struct Organization {
     pub id: String,
     pub name: String,
+    pub bucket: String,
     pub filters: Vec<Filter>,
 }
 
@@ -61,4 +62,13 @@ impl OrganizationsState {
 
         Ok(Arc::new(parsed_config))
     }
+}
+
+static ORG_STATE: OnceCell<Arc<OrganizationsState>> = OnceCell::const_new();
+
+pub async fn get_app_state(config_folder_path: PathBuf) -> &'static Arc<OrganizationsState> {
+    ORG_STATE
+        .get_or_try_init(|| OrganizationsState::try_load(config_folder_path))
+        .await
+        .expect("Failed to initialize AppState")
 }
