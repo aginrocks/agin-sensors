@@ -99,14 +99,11 @@ impl Mqtt {
     fn parse_event(&self, event: &Event) -> Result<ConnectorEvent> {
         match event {
             Event::Incoming(Packet::Publish(publish)) => {
-                let (measurement, metadata) = match self.config.format {
+                let (measurements, metadata) = match self.config.format {
                     MqttFormat::BeanAir => beanair::parse(),
                 }?;
 
-                Ok(ConnectorEvent::new_measurements(
-                    vec![measurement],
-                    metadata,
-                ))
+                Ok(ConnectorEvent::new_measurements(measurements, metadata))
             }
             _ => bail!("Unsupported MQTT event type"),
         }
