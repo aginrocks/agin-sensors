@@ -9,7 +9,7 @@ use rumqttc::{AsyncClient, ConnectionError, Event, MqttOptions, Packet, QoS};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
-use tokio::sync::mpsc::{Receiver, Sender, channel};
+use tokio::sync::mpsc::{Receiver, channel};
 use tracing::warn;
 
 #[derive(Serialize, Deserialize, JsonSchema, Clone, Debug)]
