@@ -24,8 +24,8 @@ define_connector!(
     config = {
         pub host: String,
         pub port: u16,
-        pub username: String,
-        pub password: String,
+        pub username: Option<String>,
+        pub password: Option<String>,
         pub format: MqttFormat,
         pub topic: Option<String>,
     },
@@ -62,7 +62,12 @@ impl Mqtt {
         let mut options =
             MqttOptions::new("agin-sensors", self.config.host.clone(), self.config.port);
 
-        options.set_credentials(self.config.username.clone(), self.config.password.clone());
+        if self.config.username.is_some() && self.config.password.is_some() {
+            options.set_credentials(
+                self.config.username.clone().unwrap(),
+                self.config.password.clone().unwrap(),
+            );
+        }
 
         let (client, mut eventloop) = AsyncClient::new(options, 1000);
 
