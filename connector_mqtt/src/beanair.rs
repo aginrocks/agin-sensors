@@ -22,12 +22,32 @@ enum BeanAirHeader {
 
 #[derive(BinRead, Debug)]
 #[br(little)]
-struct HiIncHeader {}
+struct HiIncHeader {
+    acquisition: HiAcquisitionType,
+}
+
+#[derive(BinRead, Debug)]
+#[br(little)]
+enum HiAcquisitionType {
+    #[br(magic(1u8))]
+    Ldcda(Ldcda),
+}
+
+#[derive(BinRead, Debug)]
+#[br(little)]
+struct Ldcda {
+    channel_id: u8,
+
+    reference_time: u32,
+
+    #[br(map = |b: [u8; 3]| u32::from_le_bytes([b[0], b[1], b[2], 0]))]
+    sample: u32,
+}
 
 #[derive(BinRead, Debug)]
 #[br(little)]
 struct XIncHeader {
-    acquisition: AcquisitionType,
+    acquisition: XAcquisitionType,
 }
 
 #[derive(BinRead, Debug)]
@@ -62,7 +82,7 @@ struct StreamingAcquisition {
 
 #[derive(BinRead, Debug)]
 #[br(little)]
-enum AcquisitionType {
+enum XAcquisitionType {
     #[br(magic(3u8))]
     Streaming(StreamingAcquisition),
 }
@@ -76,23 +96,37 @@ pub fn parse(publish: &Publish) -> Result<(Vec<Measurement>, EventMetadata)> {
 
     dbg!(&header);
 
+    let mac = publish
+        .topic
+        .split('/')
+        .nth(1)
+        .ok_or_else(|| color_eyre::eyre::eyre!("MAC not found in topic"))?
+        .to_string();
+
+    let metadata = EventMetadata::builder()
+        .topic(publish.topic.clone())
+        .mac(mac);
+
     match header {
-        BeanAirHeader::HiInc(_header) => {
-            todo!();
-        }
+        BeanAirHeader::HiInc(header) => match header.acquisition {
+            HiAcquisitionType::Ldcda(data) => {
+                let time_ms = (data.reference_time as u64) * 1000 - 3600000;
+
+                let sign_bit = (data.sample >> 23) & 0x01;
+                let remaining_bits = data.sample & 0x7FFFFF;
+                let decimal_value = if sign_bit == 0 {
+                    remaining_bits as f64 / 1000f64
+                } else {
+                    -(remaining_bits as f64 / 1000f64)
+                };
+
+                // idk what to do next
+
+                todo!()
+            }
+        },
         BeanAirHeader::XInc(header) => match header.acquisition {
-            AcquisitionType::Streaming(data) => {
-                let mac = publish
-                    .topic
-                    .split('/')
-                    .nth(1)
-                    .ok_or_else(|| color_eyre::eyre::eyre!("MAC not found in topic"))?
-                    .to_string();
-
-                let metadata = EventMetadata::builder()
-                    .topic(publish.topic.clone())
-                    .mac(mac);
-
+            XAcquisitionType::Streaming(data) => {
                 let time_ms = (data.reference_time as u64) * 1000
                     + (data.reference_milliseconds as u64)
                     - 3600000;
