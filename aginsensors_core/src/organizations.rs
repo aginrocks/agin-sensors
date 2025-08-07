@@ -6,6 +6,7 @@ use tokio::{fs::read_to_string, sync::OnceCell};
 macro_rules! define_filter {
     ($tag_value:literal, $struct_name:ident { $($field:tt)* }) => {
         paste::paste! {
+
             #[derive(Debug, serde::Serialize, serde::Deserialize, schemars::JsonSchema, Clone,)]
             pub struct $struct_name {
                 r#type: [<Uses$struct_name>],
@@ -21,8 +22,8 @@ macro_rules! define_filter {
     };
 }
 
-define_filter!("macs", MacFilter { macs: Vec<String> });
-define_filter!("tokens", TokenFilter { tokens: Vec<String> });
+define_filter!("macs", MacFilter { pub(crate) macs: Vec<String> });
+define_filter!("tokens", TokenFilter { pub(crate) tokens: Vec<String> });
 
 #[derive(serde::Serialize, serde::Deserialize, schemars::JsonSchema, Clone, Debug)]
 #[serde(untagged)]

@@ -70,6 +70,8 @@ async fn main() -> Result<()> {
                     }
                 };
 
+                // dbg!(&event);
+
                 match &event.body {
                     aginsensors_core::connector::ConnectorEventBody::Measurements(measurements) => {
                         for measurement in measurements {

@@ -2,7 +2,7 @@ use color_eyre::eyre::Result;
 use std::{collections::HashMap, sync::Arc};
 use tokio::sync::oneshot;
 
-use crate::organizations::{Organization, OrganizationsState};
+use crate::organizations::{Filter, Organization, OrganizationsState};
 
 #[derive(Debug, Clone)]
 pub struct Measurement {
@@ -90,29 +90,46 @@ impl ConnectorEvent {
     }
 
     pub fn filter(&self, organizations: &OrganizationsState) -> Result<FilteredConnectorEvent> {
-        if let Some(bucket) = &self.metadata.bucket {
-            let matching_orgs: Vec<Organization> = organizations
-                .organizations
-                .iter()
-                .filter_map(|(_, org)| {
-                    if org.bucket == *bucket {
-                        Some(org.clone())
-                    } else {
-                        None
+        let matching_orgs: Vec<Organization> = organizations
+            .organizations
+            .values()
+            .filter(|org| {
+                if let Some(bucket) = &self.metadata.bucket {
+                    if &org.bucket == bucket {
+                        return true;
                     }
-                })
-                .collect();
-            {
-                return Ok(FilteredConnectorEvent {
-                    body: self.body.clone(),
-                    organizations: matching_orgs,
-                });
-            }
-        }
+                } else if let Some(mac) = &self.metadata.mac {
+                    if org.filters.iter().any(|f| match f {
+                        Filter::MacFilter(mac_filter) => mac_filter.macs.contains(mac),
+                        _ => false,
+                    }) {
+                        return true;
+                    }
+                } else if let Some(auth_token) = &self.metadata.auth_token {
+                    if org.filters.iter().any(|f| match f {
+                        Filter::TokenFilter(token_filter) => {
+                            token_filter.tokens.contains(auth_token)
+                        }
+                        _ => false,
+                    }) {
+                        return true;
+                    }
+                }
+                false
+            })
+            .cloned()
+            .collect();
 
-        Err(color_eyre::eyre::eyre!(
-            "Couldn't find organization for event",
-        ))
+        if matching_orgs.is_empty() {
+            Err(color_eyre::eyre::eyre!(
+                "Couldn't find organization for event",
+            ))
+        } else {
+            Ok(FilteredConnectorEvent {
+                body: self.body.clone(),
+                organizations: matching_orgs,
+            })
+        }
     }
 }
 

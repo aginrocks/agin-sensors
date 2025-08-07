@@ -85,7 +85,7 @@ pub fn parse(publish: &Publish) -> Result<(Vec<Measurement>, EventMetadata)> {
                 let mac = publish
                     .topic
                     .split('/')
-                    .nth(1)
+                    .next()
                     .ok_or_else(|| color_eyre::eyre::eyre!("MAC not found in topic"))?
                     .to_string();
 
