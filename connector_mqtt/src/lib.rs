@@ -80,17 +80,15 @@ impl Mqtt {
 
         loop {
             let event = eventloop.poll().await;
-            if let Err(error) = self.handle_event(event).await {
+            if let Err(error) = self.handle_event(event?).await {
                 warn!(error = ?error, "Error while handling MQTT event");
             }
         }
     }
 
-    async fn handle_event(&self, loop_event: Result<Event, ConnectionError>) -> Result<()> {
-        let event = loop_event.wrap_err("Received an error from MQTT event loop")?;
-
+    async fn handle_event(&self, loop_event: Event) -> Result<()> {
         let parsed = self
-            .parse_event(&event)
+            .parse_event(&loop_event)
             .wrap_err("Failed to parse MQTT event")?;
 
         info!("Parsed event");
