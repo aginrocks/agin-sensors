@@ -8,6 +8,19 @@ organizations:
     filters:
       - type: macs
         macs:
+          - mac69
+          - 66:77:88:99:AA:BB
+      - type: tokens
+        tokens:
+          - token1
+          - token2
+  org2:
+    id: or223
+    name: Organization One
+    bucket: org1_bucket
+    filters:
+      - type: macs
+        macs:
           - 00:11:22:33:44:55
           - 66:77:88:99:AA:BB
       - type: tokens
