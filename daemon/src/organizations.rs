@@ -1,12 +1,12 @@
 use std::{collections::HashMap, path::PathBuf, sync::Arc};
 
+use aginsensors_core::connector::Measurement;
 use color_eyre::eyre::Result;
+use modules::modifiers::ModifierType;
 use tokio::{
     fs::read_to_string,
     sync::{OnceCell, RwLock},
 };
-
-use crate::connector::Measurement;
 
 macro_rules! define_filter {
     ($tag_value:literal, $struct_name:ident { $($field:tt)* }) => {
@@ -43,6 +43,7 @@ pub struct OrganizationYaml {
     pub bucket: String,
     pub filters: Vec<Filter>,
     pub buffer: Option<bool>,
+    pub modifiers: Option<Vec<ModifierType>>,
 }
 
 #[derive(Clone, Debug)]

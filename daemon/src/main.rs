@@ -1,14 +1,18 @@
+mod filter;
 pub mod global_config;
+mod organizations;
 mod project_config;
 mod schema;
 mod state;
 
+use aginsensors_core::connector::ConnectorEvent;
 use aginsensors_core::connector::ConnectorRunner;
 use color_eyre::eyre::{Context, Result};
 use tracing::level_filters::LevelFilter;
 use tracing_error::ErrorLayer;
 use tracing_subscriber::{fmt::format::FmtSpan, layer::SubscriberExt, util::SubscriberInitExt};
 
+use crate::filter::filter;
 use crate::{schema::write_schema, state::get_app_state};
 
 #[tokio::main]
@@ -23,8 +27,7 @@ async fn main() -> Result<()> {
 
     let state = get_app_state().await;
 
-    let organizations_state =
-        aginsensors_core::organizations::get_app_state(state.config_folder_path.clone()).await;
+    let organizations_state = organizations::get_app_state(state.config_folder_path.clone()).await;
 
     // println!("Hello, world!");
 
@@ -58,7 +61,9 @@ async fn main() -> Result<()> {
             while let Some(event) = receiver.recv().await {
                 tracing::info!("Received event from connector '{}'", connector_name);
 
-                let event = event.filter(organizations_state);
+                // let event = event.filter(organizations_state);
+
+                let event = filter(event, organizations_state);
 
                 let event = match event {
                     Ok(event) => event,

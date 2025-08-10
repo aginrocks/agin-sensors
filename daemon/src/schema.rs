@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use aginsensors_core::organizations::OrganizationYaml;
+use crate::organizations::OrganizationYaml;
 use color_eyre::eyre::Result;
 use schemars::schema_for;
 

@@ -1325,6 +1325,8 @@ dependencies = [
  "aginsensors_core",
  "color-eyre",
  "paste",
+ "schemars",
+ "serde",
 ]
 
 [[package]]
@@ -1337,6 +1339,7 @@ dependencies = [
  "connector_mqtt",
  "connector_socketio",
  "database_influx",
+ "modifier_template",
  "paste",
  "schemars",
  "serde",
