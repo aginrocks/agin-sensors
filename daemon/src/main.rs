@@ -5,8 +5,6 @@ mod state;
 
 use aginsensors_core::connector::ConnectorRunner;
 use color_eyre::eyre::{Context, Result};
-use database_influx::{DatabaseTypeInflux, LocalConfigInflux};
-use modules::databases;
 use tracing::level_filters::LevelFilter;
 use tracing_error::ErrorLayer;
 use tracing_subscriber::{fmt::format::FmtSpan, layer::SubscriberExt, util::SubscriberInitExt};
@@ -75,13 +73,27 @@ async fn main() -> Result<()> {
                 match &event.body {
                     aginsensors_core::connector::ConnectorEventBody::Measurements(measurements) => {
                         for measurement in measurements {
+                            let organizations = &event.organizations;
+
+                            for organization in organizations {
+                                if let Some(buffer) = &organization.buffer {
+                                    let mut buffer = buffer.write().await;
+                                    dbg!(&buffer);
+                                    buffer.push(measurement.clone());
+                                }
+                            }
+
                             tracing::info!(
                                 "Measurements from '{}': {} = {:?} at {} form organization {:?}",
                                 connector_name,
                                 measurement.measurement,
                                 measurement.values,
                                 measurement.timestamp,
-                                event.organizations,
+                                event
+                                    .organizations
+                                    .iter()
+                                    .map(|o| &o.name)
+                                    .collect::<Vec<_>>(),
                             );
                         }
                     }

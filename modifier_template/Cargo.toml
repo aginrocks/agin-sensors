@@ -1,0 +1,9 @@
+[package]
+name = "modifier_template"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+aginsensors_core = { version = "0.1.0", path = "../aginsensors_core" }
+paste = "1.0.15"
+color-eyre = "0.6.5"

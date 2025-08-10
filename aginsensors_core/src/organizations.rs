@@ -1,7 +1,12 @@
 use std::{collections::HashMap, path::PathBuf, sync::Arc};
 
 use color_eyre::eyre::Result;
-use tokio::{fs::read_to_string, sync::OnceCell};
+use tokio::{
+    fs::read_to_string,
+    sync::{OnceCell, RwLock},
+};
+
+use crate::connector::Measurement;
 
 macro_rules! define_filter {
     ($tag_value:literal, $struct_name:ident { $($field:tt)* }) => {
@@ -33,13 +38,22 @@ pub enum Filter {
 }
 
 #[derive(serde::Serialize, serde::Deserialize, schemars::JsonSchema, Clone, Debug)]
+pub struct OrganizationYaml {
+    pub name: String,
+    pub bucket: String,
+    pub filters: Vec<Filter>,
+    pub buffer: Option<bool>,
+}
+
+#[derive(Clone, Debug)]
 pub struct Organization {
     pub name: String,
     pub bucket: String,
     pub filters: Vec<Filter>,
+    pub buffer: Option<Arc<RwLock<Vec<Measurement>>>>,
 }
 
-#[derive(serde::Serialize, serde::Deserialize, schemars::JsonSchema, Clone, Debug)]
+#[derive(Clone, Debug)]
 pub struct OrganizationsState {
     pub organizations: HashMap<String, Organization>,
 }
@@ -57,10 +71,33 @@ impl OrganizationsState {
 
         let config = read_to_string(&organizations_config_path).await?;
 
-        let parsed_config: Self = serde_yaml::from_str(&config)
+        let parsed_config: HashMap<String, OrganizationYaml> = serde_yaml::from_str(&config)
             .map_err(|e| color_eyre::eyre::eyre!("Failed to parse global config: {}", e))?;
 
-        Ok(Arc::new(parsed_config))
+        Ok(Arc::new(Self::from_parsed_yaml(parsed_config)))
+    }
+
+    fn from_parsed_yaml(config: HashMap<String, OrganizationYaml>) -> Self {
+        let organizations = config
+            .into_iter()
+            .map(|(id, org_yaml)| {
+                let buffer = if org_yaml.buffer.unwrap_or(false) {
+                    Some(Arc::new(RwLock::new(Vec::new())))
+                } else {
+                    None
+                };
+                (
+                    id.clone(),
+                    Organization {
+                        name: org_yaml.name,
+                        bucket: org_yaml.bucket,
+                        filters: org_yaml.filters,
+                        buffer,
+                    },
+                )
+            })
+            .collect();
+        OrganizationsState { organizations }
     }
 }
 

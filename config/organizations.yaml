@@ -1,27 +1,27 @@
 # yaml-language-server: $schema=../organizations_schema.json
 
-organizations:
-  org1:
-    name: Organization One
-    bucket: org1_bucket
-    filters:
-      - type: macs
-        macs:
-          - mac69
-          - 66:77:88:99:AA:BB
-      - type: tokens
-        tokens:
-          - token1
-          - token2
-  org2:
-    name: Organization One
-    bucket: org1_bucket
-    filters:
-      - type: macs
-        macs:
-          - 00:11:22:33:44:55
-          - 66:77:88:99:AA:BB
-      - type: tokens
-        tokens:
-          - token1
-          - token2
+org1:
+  name: Organization One
+  bucket: org1_bucket
+  buffer: true
+  filters:
+    - type: macs
+      macs:
+        - mac69
+        - 66:77:88:99:AA:BB
+    - type: tokens
+      tokens:
+        - token1
+        - token2
+org2:
+  name: Organization One
+  bucket: org2_bucket
+  filters:
+    - type: macs
+      macs:
+        - 00:11:22:33:44:55
+        - 66:77:88:99:AA:BB
+    - type: tokens
+      tokens:
+        - token1
+        - token2

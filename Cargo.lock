@@ -1319,6 +1319,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "modifier_template"
+version = "0.1.0"
+dependencies = [
+ "aginsensors_core",
+ "color-eyre",
+ "paste",
+]
+
+[[package]]
 name = "modules"
 version = "0.1.0"
 dependencies = [
