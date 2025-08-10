@@ -2,7 +2,7 @@ use std::{collections::HashMap, path::PathBuf, sync::Arc};
 
 use aginsensors_core::connector::Measurement;
 use color_eyre::eyre::Result;
-use modules::modifiers::ModifierType;
+use modules::{databases::LocalDB, modifiers::ModifierType};
 use tokio::{
     fs::read_to_string,
     sync::{OnceCell, RwLock},
@@ -52,6 +52,8 @@ pub struct Organization {
     pub bucket: String,
     pub filters: Vec<Filter>,
     pub buffer: Option<Arc<RwLock<Vec<Measurement>>>>,
+    pub modifiers: Option<Vec<ModifierType>>,
+    pub databases: Vec<LocalDB>,
 }
 
 #[derive(Clone, Debug)]
@@ -93,7 +95,9 @@ impl OrganizationsState {
                         name: org_yaml.name,
                         bucket: org_yaml.bucket,
                         filters: org_yaml.filters,
+                        modifiers: org_yaml.modifiers,
                         buffer,
+                        databases: vec![],
                     },
                 )
             })

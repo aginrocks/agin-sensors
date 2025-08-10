@@ -1327,6 +1327,7 @@ dependencies = [
  "paste",
  "schemars",
  "serde",
+ "tracing",
 ]
 
 [[package]]

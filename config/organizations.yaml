@@ -6,7 +6,6 @@ org1:
   buffer: true
   modifiers:
     - ModifierTemplate
-
   filters:
     - type: macs
       macs:

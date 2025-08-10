@@ -5,10 +5,11 @@ mod project_config;
 mod schema;
 mod state;
 
-use aginsensors_core::connector::ConnectorEvent;
 use aginsensors_core::connector::ConnectorRunner;
+use aginsensors_core::modifier::Modifier;
 use color_eyre::eyre::{Context, Result};
 use tracing::level_filters::LevelFilter;
+use tracing::{error, info};
 use tracing_error::ErrorLayer;
 use tracing_subscriber::{fmt::format::FmtSpan, layer::SubscriberExt, util::SubscriberInitExt};
 
@@ -81,33 +82,45 @@ async fn main() -> Result<()> {
                             let organizations = &event.organizations;
 
                             for organization in organizations {
-                                if let Some(buffer) = &organization.buffer {
-                                    let mut buffer = buffer.write().await;
-                                    dbg!(&buffer);
-                                    buffer.push(measurement.clone());
-                                }
-                            }
+                                let processed_measurements =
+                                    if let Some(buffer) = &organization.buffer {
+                                        let mut buffer = buffer.write().await;
+                                        dbg!(&buffer);
+                                        buffer.push(measurement.clone());
 
-                            tracing::info!(
-                                "Measurements from '{}': {} = {:?} at {} form organization {:?}",
-                                connector_name,
-                                measurement.measurement,
-                                measurement.values,
-                                measurement.timestamp,
-                                event
-                                    .organizations
-                                    .iter()
-                                    .map(|o| &o.name)
-                                    .collect::<Vec<_>>(),
-                            );
+                                        let mut results = vec![measurement.clone()];
+                                        if let Some(modifiers) = &organization.modifiers {
+                                            for modifier in modifiers {
+                                                let modres = modifier.calc(buffer.clone());
+
+                                                results = match modres {
+                                                    Ok(res) => res,
+                                                    Err(e) => {
+                                                        error!(
+                                                            "Error applying modifier {:?}: {:?}",
+                                                            modifier, e
+                                                        );
+                                                        continue;
+                                                    }
+                                                };
+                                            }
+                                        }
+                                        results
+                                    } else {
+                                        vec![measurement.clone()]
+                                    };
+
+                                info!(
+                                    "writing measurements for organization '{}' to databases {:?}: {:?}",
+                                    organization.name,
+                                    organization.databases,
+                                    processed_measurements
+                                );
+                            }
                         }
                     }
                     aginsensors_core::connector::ConnectorEventBody::ReadRequest(read_request) => {
-                        tracing::info!(
-                            "Read request from '{}': {:?}",
-                            connector_name,
-                            read_request
-                        );
+                        info!("Read request from '{}': {:?}", connector_name, read_request);
                     }
                 }
             }
