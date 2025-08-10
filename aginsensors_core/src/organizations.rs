@@ -34,7 +34,6 @@ pub enum Filter {
 
 #[derive(serde::Serialize, serde::Deserialize, schemars::JsonSchema, Clone, Debug)]
 pub struct Organization {
-    pub id: String,
     pub name: String,
     pub bucket: String,
     pub filters: Vec<Filter>,

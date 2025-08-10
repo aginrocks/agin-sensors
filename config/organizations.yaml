@@ -1,8 +1,7 @@
-# yaml-language-server: $schema=https://github.com/aginrocks/agin-sensors/raw/refs/heads/main/organizations_schema.json
+# yaml-language-server: $schema=../organizations_schema.json
 
 organizations:
   org1:
-    id: org1
     name: Organization One
     bucket: org1_bucket
     filters:
@@ -15,7 +14,6 @@ organizations:
           - token1
           - token2
   org2:
-    id: or223
     name: Organization One
     bucket: org1_bucket
     filters:
