@@ -1,6 +1,5 @@
 use aginsensors_core::{connector::Measurement, define_modifier, modifier::Modifier};
 use color_eyre::eyre::Result;
-use serde::de::value;
 
 define_modifier!("modifier_template", ModifierTemplate);
 
