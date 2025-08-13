@@ -17,8 +17,10 @@ pub fn filter(
         .organizations
         .values()
         .filter(|org| {
-            if let Some(bucket) = &event.metadata.bucket {
-                if &org.bucket == bucket {
+            if let Some(event_orgs) = &event.metadata.organizations
+                && event.metadata.bucket.is_some()
+            {
+                if event_orgs.contains(&org.name) {
                     return true;
                 }
             } else if let Some(mac) = &event.metadata.mac {

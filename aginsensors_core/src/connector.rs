@@ -27,6 +27,10 @@ pub struct EventMetadata {
 
     /// Token used by the sensor
     pub auth_token: Option<String>,
+
+    /// Route event to an organization (effectively bypassing filters)
+    /// Works only if `bucket` is Some
+    pub organizations: Option<Vec<String>>,
 }
 
 impl EventMetadata {
@@ -36,6 +40,7 @@ impl EventMetadata {
             topic: None,
             mac: None,
             auth_token: None,
+            organizations: None,
         }
     }
 
@@ -56,6 +61,11 @@ impl EventMetadata {
 
     pub fn mac(mut self, mac: String) -> Self {
         self.mac = Some(mac);
+        self
+    }
+
+    pub fn orgs(mut self, orgs: Vec<String>) -> Self {
+        self.organizations = Some(orgs);
         self
     }
 }
