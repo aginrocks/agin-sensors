@@ -6,5 +6,5 @@ members = [
     "database_influx",
     "modules",
     "connector_socketio",
-    "connector_mqtt", "modifier_template",
+    "connector_mqtt", "modifier_template", "connector_modbus",
 ]

@@ -9,6 +9,7 @@ pub struct FilteredConnectorEvent {
     pub organizations: Vec<Organization>,
 }
 
+#[allow(clippy::collapsible_if)]
 pub fn filter(
     event: ConnectorEvent,
     organizations: &OrganizationsState,

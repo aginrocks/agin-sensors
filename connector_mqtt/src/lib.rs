@@ -5,7 +5,7 @@ use aginsensors_core::{
     define_connector,
 };
 use color_eyre::eyre::{Context, Result, bail};
-use rumqttc::{AsyncClient, ConnectionError, Event, MqttOptions, Packet, QoS};
+use rumqttc::{AsyncClient, Event, MqttOptions, Packet, QoS};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;

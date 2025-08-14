@@ -240,6 +240,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5c76a5792e44e4abe34d3abf15636779261d45a7450612059293d1d2cfc63422"
 
 [[package]]
+name = "byteorder"
+version = "1.5.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1fd0f2584146f6f2ef48085050886acf353beff7305ebd1ae69500e27c67f64b"
+
+[[package]]
 name = "bytes"
 version = "1.10.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -306,6 +312,25 @@ dependencies = [
 ]
 
 [[package]]
+name = "connector_modbus"
+version = "0.1.0"
+dependencies = [
+ "aginsensors_core",
+ "async-trait",
+ "chrono",
+ "color-eyre",
+ "futures",
+ "hex",
+ "paste",
+ "schemars",
+ "serde",
+ "tokio",
+ "tokio-modbus",
+ "tracing",
+ "tracing-error",
+]
+
+[[package]]
 name = "connector_mqtt"
 version = "0.1.0"
 dependencies = [
@@ -316,8 +341,6 @@ dependencies = [
  "color-eyre",
  "futures",
  "hex",
- "influxdb2",
- "influxdb2-structmap",
  "paste",
  "rumqttc",
  "schemars",
@@ -2417,6 +2440,24 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn 2.0.104",
+]
+
+[[package]]
+name = "tokio-modbus"
+version = "0.16.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "bdd5def942f13ebaebe636834026213ad9501e1cbd77687545cc08af4febd8a8"
+dependencies = [
+ "async-trait",
+ "byteorder",
+ "bytes",
+ "futures-core",
+ "futures-util",
+ "log",
+ "smallvec",
+ "thiserror 2.0.12",
+ "tokio",
+ "tokio-util",
 ]
 
 [[package]]
