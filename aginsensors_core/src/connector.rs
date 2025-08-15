@@ -22,8 +22,11 @@ pub struct EventMetadata {
     /// Topic from which the data is received (e.g. MQTT topic)
     pub topic: Option<String>,
 
-    /// Sensor's MAC address or other unique identifier
+    /// Sensor's MAC address or other unique identifier like a serial number
     pub mac: Option<String>,
+
+    /// Sensor's IP address with the port
+    pub ip: Option<String>,
 
     /// Token used by the sensor
     pub auth_token: Option<String>,
@@ -41,6 +44,7 @@ impl EventMetadata {
             mac: None,
             auth_token: None,
             organizations: None,
+            ip: None,
         }
     }
 
@@ -61,6 +65,11 @@ impl EventMetadata {
 
     pub fn mac(mut self, mac: String) -> Self {
         self.mac = Some(mac);
+        self
+    }
+
+    pub fn ip(mut self, ip: String) -> Self {
+        self.ip = Some(ip);
         self
     }
 

@@ -322,6 +322,7 @@ dependencies = [
  "futures",
  "hex",
  "paste",
+ "regex",
  "schemars",
  "serde",
  "tokio",
