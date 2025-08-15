@@ -142,7 +142,8 @@ pub fn parse(publish: &Publish) -> Result<(Vec<Measurement>, EventMetadata)> {
 
                     let mut measurement = Measurement {
                         timestamp: timestamp as i64,
-                        measurement: "".to_string(),
+                        //FIXME: Tu nie może być pustego stringa, musisz tu coś dać bo ci influx tego nie przyjmie
+                        measurement: "beanair_sensor".to_string(),
                         values: HashMap::new(),
                     };
 

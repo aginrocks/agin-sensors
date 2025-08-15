@@ -8,6 +8,7 @@ mod state;
 use std::sync::Arc;
 
 use aginsensors_core::connector::{ConnectorEventBody, ConnectorRunner, Measurement};
+use aginsensors_core::database::Database;
 use aginsensors_core::modifier::Modifier;
 use color_eyre::eyre::{Context, Result};
 use tokio::sync::RwLock;
@@ -32,7 +33,7 @@ async fn main() -> Result<()> {
 
     let state = get_app_state().await;
 
-    let organizations_state = organizations::get_app_state(state.config_folder_path.clone()).await;
+    let organizations_state = organizations::get_app_state(state.clone()).await;
 
     // println!("Hello, world!");
 
@@ -124,6 +125,12 @@ async fn handle_measurements(
             } else {
                 vec![measurement.clone()]
             };
+
+            for database in &organization.databases {
+                database
+                    .write_measurements(processed_measurements.clone())
+                    .await?;
+            }
 
             info!(
                 "writing measurements for organization '{}' to databases {:?}: {:?}",

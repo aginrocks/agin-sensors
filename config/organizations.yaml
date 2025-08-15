@@ -15,9 +15,17 @@ org1:
       tokens:
         - token1
         - token2
+  databases:
+    - key: influx
+      type: influxdb
+      bucket: org1_bucket
+    - key: influx
+      type: influxdb
+      bucket: test-bucket
 org2:
   name: Organization One
   bucket: org2_bucket
+  databases: []
   filters:
     - type: macs
       macs:
