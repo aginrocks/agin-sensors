@@ -428,7 +428,7 @@ impl ModbusReader {
         self.sender
             .send(ConnectorEvent::new_read_request(
                 ReadRequest::LastMeasurement {
-                    sender: Arc::new(Mutex::new(tx)),
+                    sender: Arc::new(Mutex::new(Some(tx))),
                 },
                 metadata,
             ))

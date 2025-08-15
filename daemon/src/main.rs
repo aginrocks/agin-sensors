@@ -10,7 +10,7 @@ use std::sync::Arc;
 use aginsensors_core::connector::{ConnectorEventBody, ConnectorRunner, Measurement, ReadRequest};
 use aginsensors_core::database::Database;
 use aginsensors_core::modifier::Modifier;
-use color_eyre::eyre::{Context, Result};
+use color_eyre::eyre::{Context, ContextCompat, Result, eyre};
 use modules::databases::LocalDB;
 use tokio::sync::RwLock;
 use tracing::level_filters::LevelFilter;
@@ -167,14 +167,12 @@ async fn handle_read_request(
         ReadRequest::LastMeasurement { sender } => {
             let last_measurement = database.get_last_measurement().await?;
 
-            let mut sender_guard = sender.lock().await;
-            let (dummy_tx, _dummy_rx) = tokio::sync::oneshot::channel::<i64>();
-            let original_sender = std::mem::replace(&mut *sender_guard, dummy_tx);
-            drop(sender_guard);
+            let mut sender = sender.lock().await;
+            let sender = sender.take().wrap_err("Measurement already sent")?;
 
-            if original_sender.send(last_measurement).is_err() {
-                error!("Failed to send last measurement timestamp");
-            }
+            sender
+                .send(last_measurement)
+                .map_err(|_| eyre!("Failed to send measurement"))?;
         }
     }
 

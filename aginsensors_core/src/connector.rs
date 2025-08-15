@@ -1,4 +1,3 @@
-use color_eyre::eyre::Result;
 use std::{collections::HashMap, sync::Arc};
 use tokio::sync::{Mutex, oneshot};
 
@@ -12,7 +11,7 @@ pub struct Measurement {
 #[derive(Debug, Clone)]
 pub enum ReadRequest {
     LastMeasurement {
-        sender: Arc<Mutex<oneshot::Sender<i64>>>,
+        sender: Arc<Mutex<Option<oneshot::Sender<i64>>>>,
     },
 }
 
