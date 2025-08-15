@@ -22,7 +22,7 @@ org1:
       type: influxdb
       bucket: test-bucket
 org2:
-  name: Organization One
+  name: Organization Two
   databases: []
   filters:
     - type: macs

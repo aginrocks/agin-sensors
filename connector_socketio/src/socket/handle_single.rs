@@ -3,6 +3,7 @@ use std::collections::HashMap;
 use aginsensors_core::connector::{ConnectorEvent, EventMetadata, IntoEvents, Measurement};
 use serde::Deserialize;
 use socketioxide::extract::{Data, SocketRef, State};
+use tracing::error;
 
 use crate::{SocketIo, middleware::extract_token};
 
@@ -39,7 +40,12 @@ pub async fn handler(
     Data(measurement): Data<SingleMeasurement>,
     State(state): State<SocketIo>,
 ) {
-    let measurement = measurement.into_events(extract_token(&socket));
+    let Ok(token) = extract_token(&socket) else {
+        error!("No token found in socket extensions");
+        return;
+    };
+
+    let measurement = measurement.into_events(token);
 
     let _ = state.tx.send(measurement.first().unwrap().to_owned()).await;
 }

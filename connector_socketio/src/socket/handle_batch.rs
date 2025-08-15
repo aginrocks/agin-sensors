@@ -77,7 +77,12 @@ pub async fn handler(
     Data(batch): Data<Batch>,
     State(state): State<SocketIo>,
 ) {
-    let measurements = batch.into_events(extract_token(&socket));
+    let Ok(token) = extract_token(&socket) else {
+        error!("No token found in socket extensions");
+        return;
+    };
+
+    let measurements = batch.into_events(token);
 
     for measurement in measurements {
         let _ = state.tx.send(measurement).await;

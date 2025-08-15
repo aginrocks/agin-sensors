@@ -1,4 +1,4 @@
-use color_eyre::eyre::Result;
+use color_eyre::eyre::{ContextCompat, Result};
 use socketioxide::extract::SocketRef;
 use tracing::error;
 
@@ -15,12 +15,8 @@ pub fn auth_middleware(s: SocketRef) -> Result<()> {
     }
 }
 
-pub fn extract_token(s: &SocketRef) -> String {
+pub fn extract_token(s: &SocketRef) -> Result<String> {
     let token = s.extensions.get::<String>();
 
-    if token.is_none() {
-        error!("No token found in socket extensions");
-    }
-
-    token.unwrap()
+    token.wrap_err("Token not found in socket extensions")
 }
