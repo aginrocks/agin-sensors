@@ -7,10 +7,11 @@ mod state;
 
 use std::sync::Arc;
 
-use aginsensors_core::connector::{ConnectorEventBody, ConnectorRunner, Measurement};
+use aginsensors_core::connector::{ConnectorEventBody, ConnectorRunner, Measurement, ReadRequest};
 use aginsensors_core::database::Database;
 use aginsensors_core::modifier::Modifier;
 use color_eyre::eyre::{Context, Result};
+use modules::databases::LocalDB;
 use tokio::sync::RwLock;
 use tracing::level_filters::LevelFilter;
 use tracing::{error, info};
@@ -106,7 +107,7 @@ async fn handle_filtered_event(event: &FilteredConnectorEvent) -> Result<()> {
             handle_measurements(event, measurements).await?;
         }
         ConnectorEventBody::ReadRequest(read_request) => {
-            info!("Read request: {:?}", read_request);
+            handle_read_request(event, read_request).await?;
         }
     }
     Ok(())
@@ -142,6 +143,40 @@ async fn handle_measurements(
     Ok(())
 }
 
+async fn handle_read_request(
+    event: &FilteredConnectorEvent,
+    read_request: &ReadRequest,
+) -> Result<()> {
+    let organization = event
+        .organizations
+        .first()
+        .ok_or_else(|| color_eyre::eyre::eyre!("No organizations found in the event"))?;
+
+    let database = organization
+        .databases
+        .iter()
+        .find(|db| matches!(db, LocalDB::Influx(_)))
+        .ok_or_else(|| {
+            color_eyre::eyre::eyre!(
+                "No Influx database configured for organization '{}'",
+                organization.name
+            )
+        })?;
+
+    match read_request {
+        ReadRequest::LastMeasurement { sender } => {
+            // let last_measurement = database.get_last_measurement().await?;
+
+            // let sender_arc = sender.lock().await.send(last_measurement);
+            // if sender_arc.is_err() {
+            //     error!("Failed to send last measurement timestamp");
+            // }
+        }
+    }
+
+    Ok(())
+}
+
 async fn process_buffer(
     organization: &Organization,
     measurement: &Measurement,
@@ -153,7 +188,7 @@ async fn process_buffer(
 
     let modifiers = organization.modifiers.clone().unwrap_or_default();
 
-    let mut results = vec![measurement.clone()];
+    let mut results: Vec<Measurement> = vec![measurement.clone()];
     for modifier in modifiers {
         let mod_result = modifier
             .calc(buffer.clone())

@@ -8,7 +8,6 @@ org1:
   filters:
     - type: macs
       macs:
-        - mac69
         - 66:77:88:99:AA:BB
     - type: tokens
       tokens:
@@ -23,13 +22,17 @@ org1:
       bucket: test-bucket
 org2:
   name: Organization Two
-  databases: []
   filters:
     - type: macs
       macs:
+        - mac69
         - 00:11:22:33:44:55
         - 66:77:88:99:AA:BB
     - type: tokens
       tokens:
         - token1
         - token2
+  databases:
+    - key: influx
+      type: influxdb
+      bucket: org2_bucket

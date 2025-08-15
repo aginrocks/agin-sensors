@@ -1,5 +1,6 @@
 mod handle_batch;
 mod handle_single;
+mod read_request;
 
 use crate::middleware::auth_middleware;
 use color_eyre::eyre::Result;
@@ -17,4 +18,5 @@ pub async fn on_connection(s: SocketRef) {
 
     s.on("measurement", handle_single::handler);
     s.on("measurements", handle_batch::handler);
+    s.on("last", read_request::handler);
 }
