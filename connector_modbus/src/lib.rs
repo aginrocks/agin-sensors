@@ -11,6 +11,7 @@ use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use tokio::{
     sync::{
+        Mutex,
         mpsc::{Receiver, Sender, channel},
         oneshot,
     },
@@ -427,7 +428,7 @@ impl ModbusReader {
         self.sender
             .send(ConnectorEvent::new_read_request(
                 ReadRequest::LastMeasurement {
-                    sender: Arc::new(tx),
+                    sender: Arc::new(Mutex::new(tx)),
                 },
                 metadata,
             ))
