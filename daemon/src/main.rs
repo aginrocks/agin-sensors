@@ -7,9 +7,11 @@ mod state;
 
 use std::sync::Arc;
 
-use aginsensors_core::connector::{ConnectorEventBody, ConnectorRunner, Measurement};
+use aginsensors_core::connector::{ConnectorEventBody, ConnectorRunner, Measurement, ReadRequest};
+use aginsensors_core::database::Database;
 use aginsensors_core::modifier::Modifier;
 use color_eyre::eyre::{Context, Result};
+use modules::databases::LocalDB;
 use tokio::sync::RwLock;
 use tracing::level_filters::LevelFilter;
 use tracing::{error, info};
@@ -32,7 +34,7 @@ async fn main() -> Result<()> {
 
     let state = get_app_state().await;
 
-    let organizations_state = organizations::get_app_state(state.config_folder_path.clone()).await;
+    let organizations_state = organizations::get_app_state(state.clone()).await;
 
     // println!("Hello, world!");
 
@@ -51,7 +53,7 @@ async fn main() -> Result<()> {
 
     // let mesurement = db.get_last_measurement().await?;
 
-    dbg!(&state.connectors);
+    // dbg!(&state.connectors);
 
     // Initialize all connectors and collect their receivers
     let mut connector_tasks = Vec::new();
@@ -105,7 +107,7 @@ async fn handle_filtered_event(event: &FilteredConnectorEvent) -> Result<()> {
             handle_measurements(event, measurements).await?;
         }
         ConnectorEventBody::ReadRequest(read_request) => {
-            info!("Read request: {:?}", read_request);
+            handle_read_request(event, read_request).await?;
         }
     }
     Ok(())
@@ -125,10 +127,54 @@ async fn handle_measurements(
                 vec![measurement.clone()]
             };
 
+            for database in &organization.databases {
+                database
+                    .write_measurements(processed_measurements.clone())
+                    .await?;
+            }
+
             info!(
                 "writing measurements for organization '{}' to databases {:?}: {:?}",
                 organization.name, organization.databases, processed_measurements
             );
+        }
+    }
+
+    Ok(())
+}
+
+async fn handle_read_request(
+    event: &FilteredConnectorEvent,
+    read_request: &ReadRequest,
+) -> Result<()> {
+    let organization = event
+        .organizations
+        .first()
+        .ok_or_else(|| color_eyre::eyre::eyre!("No organizations found in the event"))?;
+
+    let database = organization
+        .databases
+        .iter()
+        .find(|db| matches!(db, LocalDB::Influx(_)))
+        .ok_or_else(|| {
+            color_eyre::eyre::eyre!(
+                "No Influx database configured for organization '{}'",
+                organization.name
+            )
+        })?;
+
+    match read_request {
+        ReadRequest::LastMeasurement { sender } => {
+            let last_measurement = database.get_last_measurement().await?;
+
+            let mut sender_guard = sender.lock().await;
+            let (dummy_tx, _dummy_rx) = tokio::sync::oneshot::channel::<i64>();
+            let original_sender = std::mem::replace(&mut *sender_guard, dummy_tx);
+            drop(sender_guard);
+
+            if original_sender.send(last_measurement).is_err() {
+                error!("Failed to send last measurement timestamp");
+            }
         }
     }
 
@@ -141,12 +187,12 @@ async fn process_buffer(
     buffer: Arc<RwLock<Vec<Measurement>>>,
 ) -> Result<Vec<Measurement>> {
     let mut buffer = buffer.write().await;
-    dbg!(&buffer);
+    // dbg!(&buffer);
     buffer.push(measurement.clone());
 
     let modifiers = organization.modifiers.clone().unwrap_or_default();
 
-    let mut results = vec![measurement.clone()];
+    let mut results: Vec<Measurement> = vec![measurement.clone()];
     for modifier in modifiers {
         let mod_result = modifier
             .calc(buffer.clone())

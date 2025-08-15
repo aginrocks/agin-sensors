@@ -49,9 +49,11 @@ impl Database for LocalInflux {
             ))))
             .await?;
 
-        dbg!(&last_measurement);
+        // dbg!(&last_measurement);
 
-        Ok(last_measurement.first().map_or(0, |m| m._time.timestamp()))
+        Ok(last_measurement
+            .first()
+            .map_or(0, |m| m._time.timestamp_millis()))
     }
 
     async fn write_measurements(

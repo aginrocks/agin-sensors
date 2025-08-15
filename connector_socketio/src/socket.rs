@@ -1,12 +1,14 @@
 mod handle_batch;
 mod handle_single;
+mod read_request;
 
+use crate::middleware::auth_middleware;
 use color_eyre::eyre::Result;
-use socketioxide::{SocketIo, extract::SocketRef};
+use socketioxide::{SocketIo, extract::SocketRef, handler::ConnectHandler};
 use tracing::debug;
 
 pub async fn init_io(io: &SocketIo) -> Result<()> {
-    io.ns("/", on_connection);
+    io.ns("/", on_connection.with(auth_middleware));
 
     Ok(())
 }
@@ -16,4 +18,5 @@ pub async fn on_connection(s: SocketRef) {
 
     s.on("measurement", handle_single::handler);
     s.on("measurements", handle_batch::handler);
+    s.on("last", read_request::handler);
 }

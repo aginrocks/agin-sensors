@@ -12,8 +12,6 @@ macro_rules! define_database {
             pub struct [<LocalConfig$struct_name>] {
                  pub r#type: [<DatabaseType$struct_name>],
 
-                 pub name: String,
-
                  $($local_config)*
             }
 

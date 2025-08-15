@@ -1,10 +1,12 @@
 use std::collections::HashMap;
 
 use aginsensors_core::connector::{ConnectorEvent, EventMetadata, IntoEvents, Measurement};
+use color_eyre::eyre::ContextCompat;
 use serde::Deserialize;
-use socketioxide::extract::{AckSender, Data, State};
+use socketioxide::extract::{AckSender, Data, SocketRef, State};
+use tracing::error;
 
-use crate::SocketIo;
+use crate::{SocketIo, middleware::extract_token};
 
 #[derive(Deserialize, Debug, Clone)]
 pub struct Batch {
@@ -15,13 +17,13 @@ pub struct Batch {
     pub groups: Vec<Group>,
 }
 
-impl IntoEvents for Batch {
-    fn into_events(self) -> Vec<ConnectorEvent> {
+impl Batch {
+    fn into_events(self, token: String) -> Vec<ConnectorEvent> {
         self.groups
             .into_iter()
             .map(|group| {
-                let bucket = self.bucket.clone();
-                let metadata = EventMetadata::builder().bucket(bucket);
+                // let token = self.token.clone();
+                let metadata = EventMetadata::builder().auth_token(token.clone());
 
                 ConnectorEvent::new_measurements(
                     group
@@ -69,8 +71,18 @@ pub struct GroupedMeasurement {
     pub values: HashMap<String, f64>,
 }
 
-pub async fn handler(ack: AckSender, Data(batch): Data<Batch>, State(state): State<SocketIo>) {
-    let measurements = batch.into_events();
+pub async fn handler(
+    socket: SocketRef,
+    ack: AckSender,
+    Data(batch): Data<Batch>,
+    State(state): State<SocketIo>,
+) {
+    let Ok(token) = extract_token(&socket) else {
+        error!("No token found in socket extensions");
+        return;
+    };
+
+    let measurements = batch.into_events(token);
 
     for measurement in measurements {
         let _ = state.tx.send(measurement).await;

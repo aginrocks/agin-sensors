@@ -1,12 +1,17 @@
-use std::{collections::HashMap, path::PathBuf, sync::Arc};
+use std::{collections::HashMap, sync::Arc};
 
 use aginsensors_core::connector::Measurement;
-use color_eyre::eyre::Result;
-use modules::{databases::LocalDB, modifiers::ModifierType};
+use color_eyre::eyre::{ContextCompat, Result};
+use modules::{
+    databases::{GlobalDB, LocalDB, LocalDBConfig},
+    modifiers::ModifierType,
+};
 use tokio::{
     fs::read_to_string,
     sync::{OnceCell, RwLock},
 };
+
+use crate::state::AppState;
 
 macro_rules! define_filter {
     ($tag_value:literal, $struct_name:ident { $($field:tt)* }) => {
@@ -38,18 +43,24 @@ pub enum Filter {
 }
 
 #[derive(serde::Serialize, serde::Deserialize, schemars::JsonSchema, Clone, Debug)]
+pub struct OrganizationDatabaseConfig {
+    pub key: String,
+    #[serde(flatten)]
+    pub config: LocalDBConfig,
+}
+
+#[derive(serde::Serialize, serde::Deserialize, schemars::JsonSchema, Clone, Debug)]
 pub struct OrganizationYaml {
     pub name: String,
-    pub bucket: String,
     pub filters: Vec<Filter>,
     pub buffer: Option<bool>,
     pub modifiers: Option<Vec<ModifierType>>,
+    pub databases: Vec<OrganizationDatabaseConfig>,
 }
 
 #[derive(Clone, Debug)]
 pub struct Organization {
     pub name: String,
-    pub bucket: String,
     pub filters: Vec<Filter>,
     pub buffer: Option<Arc<RwLock<Vec<Measurement>>>>,
     pub modifiers: Option<Vec<ModifierType>>,
@@ -62,8 +73,8 @@ pub struct OrganizationsState {
 }
 
 impl OrganizationsState {
-    pub async fn try_load(config_folder_path: PathBuf) -> Result<Arc<Self>> {
-        let organizations_config_path = config_folder_path.join("organizations.yaml");
+    pub async fn try_load(appstate: Arc<AppState>) -> Result<Arc<Self>> {
+        let organizations_config_path = appstate.config_folder_path.join("organizations.yaml");
 
         if !organizations_config_path.exists() {
             return Err(color_eyre::eyre::eyre!(
@@ -77,10 +88,16 @@ impl OrganizationsState {
         let parsed_config: HashMap<String, OrganizationYaml> = serde_yaml::from_str(&config)
             .map_err(|e| color_eyre::eyre::eyre!("Failed to parse global config: {}", e))?;
 
-        Ok(Arc::new(Self::from_parsed_yaml(parsed_config)))
+        Ok(Arc::new(Self::from_parsed_yaml(
+            parsed_config,
+            appstate.databases.clone(),
+        )))
     }
 
-    fn from_parsed_yaml(config: HashMap<String, OrganizationYaml>) -> Self {
+    fn from_parsed_yaml(
+        config: HashMap<String, OrganizationYaml>,
+        databases: HashMap<String, GlobalDB>,
+    ) -> Self {
         let organizations = config
             .into_iter()
             .map(|(id, org_yaml)| {
@@ -89,15 +106,31 @@ impl OrganizationsState {
                 } else {
                     None
                 };
+
+                // Create local databases for the organization
+                let databases = org_yaml
+                    .databases
+                    .iter()
+                    .map(|db_config| {
+                        databases
+                            .get(&db_config.key)
+                            .wrap_err(format!(
+                                "Database '{}' not found in global databases",
+                                db_config.key
+                            ))
+                            .unwrap()
+                            .new_local_client(&db_config.config)
+                    })
+                    .collect::<Vec<_>>();
+
                 (
                     id.clone(),
                     Organization {
                         name: org_yaml.name,
-                        bucket: org_yaml.bucket,
                         filters: org_yaml.filters,
                         modifiers: org_yaml.modifiers,
                         buffer,
-                        databases: vec![],
+                        databases,
                     },
                 )
             })
@@ -108,9 +141,9 @@ impl OrganizationsState {
 
 static ORG_STATE: OnceCell<Arc<OrganizationsState>> = OnceCell::const_new();
 
-pub async fn get_app_state(config_folder_path: PathBuf) -> &'static Arc<OrganizationsState> {
+pub async fn get_app_state(appstate: Arc<AppState>) -> &'static Arc<OrganizationsState> {
     ORG_STATE
-        .get_or_try_init(|| OrganizationsState::try_load(config_folder_path))
+        .get_or_try_init(|| OrganizationsState::try_load(appstate))
         .await
         .expect("Failed to initialize AppState")
 }
