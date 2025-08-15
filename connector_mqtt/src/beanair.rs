@@ -94,7 +94,7 @@ pub fn parse(publish: &Publish) -> Result<(Vec<Measurement>, EventMetadata)> {
 
     let header = BeanAirHeader::read(&mut cursor)?;
 
-    dbg!(&header);
+    // dbg!(&header);
 
     let mac = publish
         .topic
@@ -173,7 +173,7 @@ pub fn parse(publish: &Publish) -> Result<(Vec<Measurement>, EventMetadata)> {
                     measurements.push(measurement);
                 }
 
-                dbg!(&measurements);
+                // dbg!(&measurements);
 
                 Ok((measurements, metadata))
             }

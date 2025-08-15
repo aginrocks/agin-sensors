@@ -1,7 +1,7 @@
 use std::{collections::HashMap, sync::Arc};
 
 use aginsensors_core::connector::Measurement;
-use color_eyre::eyre::Result;
+use color_eyre::eyre::{ContextCompat, Result};
 use modules::{
     databases::{GlobalDB, LocalDB, LocalDBConfig},
     modifiers::ModifierType,
@@ -52,7 +52,6 @@ pub struct OrganizationDatabaseConfig {
 #[derive(serde::Serialize, serde::Deserialize, schemars::JsonSchema, Clone, Debug)]
 pub struct OrganizationYaml {
     pub name: String,
-    pub bucket: String,
     pub filters: Vec<Filter>,
     pub buffer: Option<bool>,
     pub modifiers: Option<Vec<ModifierType>>,
@@ -62,7 +61,6 @@ pub struct OrganizationYaml {
 #[derive(Clone, Debug)]
 pub struct Organization {
     pub name: String,
-    pub bucket: String,
     pub filters: Vec<Filter>,
     pub buffer: Option<Arc<RwLock<Vec<Measurement>>>>,
     pub modifiers: Option<Vec<ModifierType>>,
@@ -108,13 +106,20 @@ impl OrganizationsState {
                 } else {
                     None
                 };
+
+                // Create local databases for the organization
                 let databases = org_yaml
                     .databases
-                    .into_iter()
-                    .filter_map(|db_config| {
+                    .iter()
+                    .map(|db_config| {
                         databases
                             .get(&db_config.key)
-                            .map(|global_db| global_db.new_local_client(&db_config.config))
+                            .wrap_err(format!(
+                                "Database '{}' not found in global databases",
+                                db_config.key
+                            ))
+                            .unwrap()
+                            .new_local_client(&db_config.config)
                     })
                     .collect::<Vec<_>>();
 
@@ -122,7 +127,6 @@ impl OrganizationsState {
                     id.clone(),
                     Organization {
                         name: org_yaml.name,
-                        bucket: org_yaml.bucket,
                         filters: org_yaml.filters,
                         modifiers: org_yaml.modifiers,
                         buffer,

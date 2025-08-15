@@ -16,7 +16,7 @@ org1:
         - token1
         - token2
   databases:
-    - key: influx
+    - key: influxasd
       type: influxdb
       bucket: org1_bucket
     - key: influx

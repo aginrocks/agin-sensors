@@ -52,7 +52,7 @@ async fn main() -> Result<()> {
 
     // let mesurement = db.get_last_measurement().await?;
 
-    dbg!(&state.connectors);
+    // dbg!(&state.connectors);
 
     // Initialize all connectors and collect their receivers
     let mut connector_tasks = Vec::new();
@@ -148,7 +148,7 @@ async fn process_buffer(
     buffer: Arc<RwLock<Vec<Measurement>>>,
 ) -> Result<Vec<Measurement>> {
     let mut buffer = buffer.write().await;
-    dbg!(&buffer);
+    // dbg!(&buffer);
     buffer.push(measurement.clone());
 
     let modifiers = organization.modifiers.clone().unwrap_or_default();
