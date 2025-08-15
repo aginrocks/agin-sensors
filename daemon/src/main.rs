@@ -165,12 +165,16 @@ async fn handle_read_request(
 
     match read_request {
         ReadRequest::LastMeasurement { sender } => {
-            // let last_measurement = database.get_last_measurement().await?;
+            let last_measurement = database.get_last_measurement().await?;
 
-            // let sender_arc = sender.lock().await.send(last_measurement);
-            // if sender_arc.is_err() {
-            //     error!("Failed to send last measurement timestamp");
-            // }
+            let mut sender_guard = sender.lock().await;
+            let (dummy_tx, _dummy_rx) = tokio::sync::oneshot::channel::<i64>();
+            let original_sender = std::mem::replace(&mut *sender_guard, dummy_tx);
+            drop(sender_guard);
+
+            if original_sender.send(last_measurement).is_err() {
+                error!("Failed to send last measurement timestamp");
+            }
         }
     }
 

@@ -22,7 +22,7 @@ pub async fn handler(socket: SocketRef, State(state): State<SocketIo>) {
             .tx
             .send(ConnectorEvent::new_read_request(
                 ReadRequest::LastMeasurement {
-                    sender: Arc::new(tx),
+                    sender: Arc::new(Mutex::new(tx)),
                 },
                 metadata,
             ))
