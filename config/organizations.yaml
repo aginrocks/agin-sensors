@@ -2,7 +2,6 @@
 
 org1:
   name: Organization One
-  bucket: org1_bucket
   buffer: true
   modifiers:
     - ModifierTemplate
@@ -16,7 +15,7 @@ org1:
         - token1
         - token2
   databases:
-    - key: influxasd
+    - key: influx
       type: influxdb
       bucket: org1_bucket
     - key: influx
@@ -24,7 +23,6 @@ org1:
       bucket: test-bucket
 org2:
   name: Organization One
-  bucket: org2_bucket
   databases: []
   filters:
     - type: macs

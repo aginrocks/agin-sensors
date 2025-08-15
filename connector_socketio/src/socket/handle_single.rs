@@ -2,9 +2,9 @@ use std::collections::HashMap;
 
 use aginsensors_core::connector::{ConnectorEvent, EventMetadata, IntoEvents, Measurement};
 use serde::Deserialize;
-use socketioxide::extract::{Data, State};
+use socketioxide::extract::{Data, SocketRef, State};
 
-use crate::SocketIo;
+use crate::{SocketIo, middleware::extract_token};
 
 #[derive(Deserialize, Debug, Clone)]
 pub struct SingleMeasurement {
@@ -18,9 +18,9 @@ pub struct SingleMeasurement {
     pub measurement: String,
 }
 
-impl IntoEvents for SingleMeasurement {
-    fn into_events(self) -> Vec<ConnectorEvent> {
-        let metadata = EventMetadata::builder().bucket(self.bucket);
+impl SingleMeasurement {
+    fn into_events(self, token: String) -> Vec<ConnectorEvent> {
+        let metadata = EventMetadata::builder().auth_token(token.clone());
 
         vec![ConnectorEvent::new_measurements(
             vec![Measurement {
@@ -34,8 +34,12 @@ impl IntoEvents for SingleMeasurement {
 }
 
 // idk why we need to ack only on a batch and not on a single measurement but it is what it is
-pub async fn handler(Data(measurement): Data<SingleMeasurement>, State(state): State<SocketIo>) {
-    let measurement = measurement.into_events();
+pub async fn handler(
+    socket: SocketRef,
+    Data(measurement): Data<SingleMeasurement>,
+    State(state): State<SocketIo>,
+) {
+    let measurement = measurement.into_events(extract_token(&socket));
 
     let _ = state.tx.send(measurement.first().unwrap().to_owned()).await;
 }

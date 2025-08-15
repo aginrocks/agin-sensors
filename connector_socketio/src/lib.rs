@@ -1,3 +1,4 @@
+pub mod middleware;
 mod socket;
 
 use aginsensors_core::{
