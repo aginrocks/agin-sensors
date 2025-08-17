@@ -1,4 +1,7 @@
-use std::{collections::HashMap, sync::Arc};
+use std::{
+    collections::{HashMap, HashSet},
+    sync::Arc,
+};
 
 use aginsensors_core::{
     connector::{ConnectorEvent, ConnectorRunner, EventMetadata, Measurement, ReadRequest},
@@ -15,7 +18,7 @@ use tokio::{
         mpsc::{Receiver, Sender, channel},
         oneshot,
     },
-    task::JoinHandle,
+    task::{JoinHandle, LocalSet},
     time::{Duration, interval},
 };
 use tokio_modbus::{
@@ -23,7 +26,7 @@ use tokio_modbus::{
     client::{Context, Reader, Writer},
     prelude::*,
 };
-use tracing::debug;
+use tracing::{debug, error};
 
 #[derive(Serialize, Deserialize, JsonSchema, Clone, Debug)]
 pub struct ModbusDevice {
@@ -66,19 +69,24 @@ impl ConnectorRunner for Modbus {
 
         for device in self.config.devices.clone() {
             let this = self.clone();
-            let handle: JoinHandle<Result<()>> = tokio::spawn(async move {
+            let local = LocalSet::new();
+            let handle: JoinHandle<Result<()>> = local.spawn_local(async move {
                 let mut ticker = interval(Duration::from_secs(30 * 60));
 
                 loop {
                     ticker.tick().await;
 
-                    let client = ModbusReader::try_connect(
+                    let mut client = ModbusReader::try_connect(
                         format!("{}:{}", device.ip, device.port),
                         this.tx.clone(),
                         device.timefix.unwrap_or_default(),
                     )
                     .await
                     .wrap_err_with(|| format!("Failed to connect to {}", device.ip))?;
+
+                    client.read().await.wrap_err_with(|| {
+                        format!("Failed to read data from {}:{}", device.ip, device.port)
+                    })?;
                 }
             });
 
@@ -382,19 +390,112 @@ impl ModbusReader {
     }
 
     /// Reads data points
-    async fn read_records(&mut self, metadata: &ModbusMetadata) -> Result<()> {
-        // let mut result = Vec::new();
+    #[allow(clippy::collapsible_if)]
+    async fn read_records(&mut self, metadata: &ModbusMetadata) -> Result<Vec<Measurement>> {
+        let mut result = Vec::new();
         let record_count = self.get_record_count().await?;
         debug!("Number of data lines: {record_count}");
 
         let mut last_counter = record_count - 1;
 
+        let date = self.get_last_date(metadata.event_metadata.clone()).await?;
+
         if self.timefix {
-            todo!();
+            let mut last = self
+                .read_record(metadata.column_headers.clone(), last_counter, false)
+                .await?;
+            if last.date.year() < 2002 {
+                bail!("Date is not set yet (bad RTC time): need to wait for the next measurement!");
+            }
+
+            let mut last_valid_date = last.date;
+            let mut last_invalid_date: Option<DateTime<Utc>> = None;
+            let mut date_broken = false;
+
+            debug!("Read in backward direction to fix RTC clock time holes");
+
+            while last_counter != 0 && last.date > date && last_counter + 1 == last.next_counter {
+                if last.date.year() == 2000 {
+                    if !date_broken {
+                        if last_invalid_date.is_some() {
+                            let difference_in_ms = last_valid_date
+                                .signed_duration_since(date)
+                                .num_milliseconds();
+                            let difference_in_hours = difference_in_ms / (1000 * 60 * 60);
+                            if difference_in_hours <= 2 {
+                                // Can repair the date
+                                last_invalid_date = Some(last.date);
+
+                                // Subtract 1h
+                                last.date = last_valid_date
+                                    .checked_sub_signed(chrono::Duration::hours(1))
+                                    .wrap_err("Failed to subtract 1 hour")?;
+
+                                last_valid_date = last.date;
+                            } else {
+                                error!("Broken date - cannot repair");
+                                date_broken = true;
+                            }
+                        } else {
+                            debug!(?last, ?last_valid_date, "Fixing wrong date");
+                            // First invalid date - fixing
+                            last_invalid_date = Some(last.date);
+
+                            // Subtract 1h
+                            last.date = last_valid_date
+                                .checked_sub_signed(chrono::Duration::hours(1))
+                                .wrap_err("Failed to subtract 1 hour")?;
+
+                            last_valid_date = last.date;
+
+                            debug!(?last, "Fixed item");
+                        }
+                    }
+                } else {
+                    // Valid date
+                    last_invalid_date = None;
+                    last_valid_date = last.date;
+                    date_broken = false;
+                }
+                // Limit data range
+                if !date_broken {
+                    if last.date <= date {
+                        debug!(?last, "Date is before the limit - stopping");
+                        break;
+                    }
+
+                    let joined = Self::join_measurements(last.measurements.clone(), last.date);
+                    match joined {
+                        Ok(measurements) => {
+                            result.extend(measurements);
+                        }
+                        Err(e) => {
+                            debug!("Failed to join measurements: {e}");
+                        }
+                    }
+                }
+
+                // Read next
+                last_counter -= 1;
+                last = self
+                    .read_record(metadata.column_headers.clone(), 0, false)
+                    .await?;
+            }
+            if last_counter == 0 && last.date.year() > 2000 {
+                let joined = Self::join_measurements(last.measurements.clone(), last.date);
+                match joined {
+                    Ok(measurements) => {
+                        result.extend(measurements);
+                    }
+                    Err(e) => {
+                        debug!("Failed to join measurements: {e}");
+                    }
+                };
+            }
+
+            result.reverse();
         } else {
             // Incremental read
-
-            let date = self.get_last_date(metadata.event_metadata.clone()).await?;
             self.write_date(DATA_REGISTERS_START, date).await?;
 
             self.read_registers_in_blocks(NUMBER_REGISTER, 1).await?;
@@ -409,16 +510,108 @@ impl ModbusReader {
                 last = Some(check);
             }
 
-            while last_counter != 0
-                && let Some(last) = last.clone()
-                && last.date > date
-                && last_counter + 1 == last.next_counter
-            {}
-
+            let mut last = last.wrap_err("No first measurement")?;
             debug!(?date, last_counter, "Read in forward direction");
+            while last_counter != 0 && last.date > date && last_counter + 1 == last.next_counter {
+                let joined = Self::join_measurements(last.measurements, last.date);
+                match joined {
+                    Ok(measurements) => {
+                        result.extend(measurements);
+                    }
+                    Err(e) => {
+                        debug!("Failed to join measurements: {e}");
+                    }
+                }
+
+                last_counter += 1;
+                last = self
+                    .read_record(metadata.column_headers.clone(), 0, false)
+                    .await?;
+
+                self.read_registers_in_blocks(NUMBER_REGISTER, 1).await?;
+            }
         }
 
-        Ok(())
+        Ok(result)
+    }
+
+    fn join_measurements(
+        measurements: HashMap<String, f64>,
+        date: DateTime<Utc>,
+    ) -> Result<Vec<Measurement>> {
+        let mut result = Vec::new();
+        let mut matched = HashSet::new();
+        let re = Regex::new("(O\\d+)X(\\d+)")?; // Match keys like O4X<number>, O5X<number>
+
+        for (name, value) in &measurements {
+            let measurement = Self::join_measurement(
+                &measurements,
+                &mut matched,
+                name,
+                value,
+                &re,
+                date.timestamp_millis(),
+            );
+
+            match measurement {
+                Ok(m) => {
+                    if let Some(m) = m {
+                        result.push(m);
+                    }
+                }
+                Err(e) => {
+                    debug!("Failed to join measurement: {e}");
+                    continue;
+                }
+            };
+        }
+
+        Ok(result)
+    }
+
+    fn join_measurement(
+        measurements: &HashMap<String, f64>,
+        matched: &mut HashSet<String>,
+        name: &str,
+        value: &f64,
+        re: &Regex,
+        timestamp: i64,
+    ) -> Result<Option<Measurement>> {
+        if let Some(captures) = re.captures(name) {
+            let prefix = captures.get(1).wrap_err("No prefix matched")?.as_str(); // Extract prefix, e.g., O4, O5
+            let index = captures
+                .get(2)
+                .wrap_err("No index matched")?
+                .as_str()
+                .parse::<i32>()?; // Extract index, e.g., 1, 2
+
+            let x = value;
+            let y = measurements.get(&format!("{prefix}Y{index}"));
+
+            if let Some(y) = y {
+                let values = HashMap::from([("x".to_string(), *x), ("y".to_string(), *y)]);
+
+                matched.insert(name.to_string());
+                matched.insert(format!("{prefix}Y{index}"));
+
+                return Ok(Some(Measurement {
+                    timestamp,
+                    measurement: format!("{prefix}_{index}"),
+                    values,
+                }));
+            }
+        }
+        // Pass through non-matching elements
+        if !matched.contains(name) {
+            let values = HashMap::from([("v".to_string(), *value)]);
+            return Ok(Some(Measurement {
+                timestamp,
+                measurement: name.to_string(),
+                values,
+            }));
+        }
+
+        Ok(None)
     }
 
     /// Gets last date from the database
