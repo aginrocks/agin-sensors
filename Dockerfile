@@ -2,10 +2,18 @@ ARG BUILDPLATFORM
 
 FROM --platform=$BUILDPLATFORM tonistiigi/xx AS xx
 
-FROM --platform=$BUILDPLATFORM rust:alpine AS chef
+FROM --platform=$BUILDPLATFORM rust:trixie AS chef
 COPY --from=xx / /
 
-RUN apk add clang lld pkgconfig openssl-dev
+RUN apt-get update && apt-get install -y \
+    clang \
+    lld \
+    pkg-config \
+    musl-tools \
+    musl-dev \
+    libssl-dev \
+    && rm -rf /var/lib/apt/lists/*
+
 # RUN cargo install cargo-chef 
 WORKDIR /app
 
@@ -38,15 +46,14 @@ COPY . .
 #     --mount=type=cache,target=/app/target \
 #     xx-cargo build --release --package ${PROJECT_NAME}
 RUN --mount=type=cache,target=/app/target \
-    xx-cargo build --release --package ${PROJECT_NAME}
+    xx-cargo build --release --target $(xx-cargo --print-target-triple --musl) --package ${PROJECT_NAME}
 
-# Copy the executable to an easily-findable path
-RUN mkdir -p /app/target/release
-RUN --mount=type=cache,target=/app/target \
-    cp target/$(xx-cargo --print-target-triple)/release/${PROJECT_NAME} /app/output
+# Copy the binary out
+RUN mkdir -p /app/output
+RUN cp target/$(xx-cargo --print-target-triple --musl)/release/${PROJECT_NAME} /app/output
 
-# Verify the build
-RUN xx-verify --static /app/output
+# Verify it's static
+RUN xx-verify --static /app/output/${PROJECT_NAME}
 
 FROM scratch AS runtime
 COPY --from=builder /app/output /app
