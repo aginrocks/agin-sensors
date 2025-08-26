@@ -1,4 +1,23 @@
 services:
+  daemon:
+    build: .
+    image: agin-sensors-daemon
+    container_name: agin-sensors-daemon
+    restart: unless-stopped
+    depends_on:
+      - influxdb
+    ports:
+      - "${DAEMON_PORT_3000:-3000}:3000"
+      - "${DAEMON_PORT_3001:-3001}:3001"
+    volumes:
+      - ./${CONFIG_FOLDER_PATH:-config}:/app/config:ro
+      - ./.env:/app/.env:ro
+    environment:
+      - RUST_LOG=${RUST_LOG:-info}
+      - CONFIG_FOLDER_PATH=/app/config
+    networks:
+      - agin-sensors
+
   influxdb:
     image: influxdb:latest
     restart: always
@@ -14,6 +33,9 @@ services:
     volumes:
       - ./influx/data:/var/lib/influxdb2
       - ./influx/config:/etc/influxdb2
+    networks:
+      - agin-sensors
+
   timescaledb-ha:
     container_name: timescaledb
     ports:
@@ -25,3 +47,9 @@ services:
       - PGDATA=/pgdata
       - POSTGRES_PASSWORD=password
     image: timescale/timescaledb-ha:pg17
+    networks:
+      - agin-sensors
+
+networks:
+  agin-sensors:
+    driver: bridge

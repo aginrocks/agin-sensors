@@ -2,7 +2,7 @@
 databases:
   influx:
     type: influxdb
-    url: http://localhost:8086
+    url: http://influxdb:8086
     token: 7kvQLYnWRXZo2xkmfYi14_OSD3kOk93rwZ0SsdTMsttaw33AMaaGCgg6Bf_-yvEgE3736byabQFFZEA1CXwXFg==
     organization: test-org
 connectors:
