@@ -1,8 +1,8 @@
 services:
   daemon:
     build: .
-    image: agin-sensors-daemon
-    container_name: agin-sensors-daemon
+    image: ghcr.io/aginrocks/agin-sensors:latest
+    container_name: agin-sensors
     restart: unless-stopped
     depends_on:
       - influxdb
