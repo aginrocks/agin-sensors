@@ -1,60 +1,57 @@
-ARG BUILDPLATFORM
+# Build stage
+FROM rustlang/rust:nightly-alpine AS builder
 
-FROM --platform=$BUILDPLATFORM tonistiigi/xx AS xx
-
-FROM --platform=$BUILDPLATFORM rust:trixie AS chef
-COPY --from=xx / /
-
-RUN apt-get update && apt-get install -y \
-    clang \
-    lld \
-    pkg-config \
-    musl-tools \
+# Install system dependencies for static linking
+RUN apk add --no-cache \
     musl-dev \
-    libssl-dev \
-    && rm -rf /var/lib/apt/lists/*
+    pkgconfig \
+    openssl-dev \
+    openssl-libs-static
 
-# RUN cargo install cargo-chef 
+# Add musl target for static linking
+RUN rustup target add x86_64-unknown-linux-musl
+
+# Set working directory
 WORKDIR /app
 
-FROM chef AS depcacher
-COPY . .
-RUN --mount=type=cache,target=/usr/local/cargo/registry \
-    cargo fetch
+# Copy workspace configuration first
+COPY Cargo.toml Cargo.lock ./
 
-# FROM chef AS planner
-# COPY . .
-# RUN cargo chef prepare --recipe-path recipe.json
+# Copy all source code
+COPY aginsensors_core/ ./aginsensors_core/
+COPY daemon/ ./daemon/
+COPY database_influx/ ./database_influx/
+COPY modules/ ./modules/
+COPY connector_socketio/ ./connector_socketio/
+COPY connector_mqtt/ ./connector_mqtt/
+COPY modifier_template/ ./modifier_template/
+COPY connector_modbus/ ./connector_modbus/
 
-FROM chef AS builder
-# COPY --from=planner /app/recipe.json recipe.json
+# Set environment variables for static linking
+ENV RUSTFLAGS="-C target-feature=+crt-static"
+ENV PKG_CONFIG_ALL_STATIC=1
+ENV PKG_CONFIG_ALL_DYNAMIC=0
 
-# Setup the environment for the target platform
-ARG TARGETPLATFORM
-RUN xx-cargo --setup-target-triple
+# Build the daemon binary in release mode with static linking
+RUN cargo build --release --target x86_64-unknown-linux-musl --package daemon
 
-# Reuse the dockerfile for different crates
-ARG PROJECT_NAME
+# Runtime stage - using Alpine for minimal image with shell and directory support
+FROM alpine:latest AS runtime
 
-# Build dependencies
-# RUN --mount=type=cache,target=/usr/local/cargo/registry \
-#     xx-cargo chef cook --release --recipe-path recipe.json
+# Install CA certificates for HTTPS requests
+RUN apk --no-cache add ca-certificates
 
-# Build the application
-COPY . .
-# RUN --mount=type=cache,target=/usr/local/cargo/registry \
-#     --mount=type=cache,target=/app/target \
-#     xx-cargo build --release --package ${PROJECT_NAME}
-RUN --mount=type=cache,target=/app/target \
-    xx-cargo build --release --target $(xx-cargo --print-target-triple --musl) --package ${PROJECT_NAME}
+# Create the app directory
+RUN mkdir -p /app
 
-# Copy the binary out
-RUN mkdir -p /app/output
-RUN cp target/$(xx-cargo --print-target-triple --musl)/release/${PROJECT_NAME} /app/output
+# Copy the statically linked binary
+COPY --from=builder /app/target/x86_64-unknown-linux-musl/release/daemon /app/daemon
 
-# Verify it's static
-RUN xx-verify --static /app/output/${PROJECT_NAME}
+# Make the binary executable
+RUN chmod +x /app/daemon
 
-FROM scratch AS runtime
-COPY --from=builder /app/output /app
-ENTRYPOINT ["/app"]
+# Set working directory
+WORKDIR /app
+
+# Set the binary as entrypoint
+ENTRYPOINT ["/app/daemon"]
