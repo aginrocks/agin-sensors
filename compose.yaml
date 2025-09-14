@@ -25,3 +25,8 @@ services:
       - PGDATA=/pgdata
       - POSTGRES_PASSWORD=password
     image: timescale/timescaledb-ha:pg17
+  agin-sensors:
+    image: ghcr.io/aginrocks/agin-sensors:latest
+    restart: unless-stopped
+    build: .
+
