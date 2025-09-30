@@ -19,17 +19,17 @@ const featuresList: FeatureProps[] = [
   {
     label: "MQTT",
     description: "Mqtt handler for popular benair sensors",
-    image: "/images/http.png",
+    image: "/images/socketio.png",
   },
   {
     label: "Socket.IO",
     description: "Send and receive real time data with Socket.IO",
-    image: "/images/sse.png",
+    image: "/images/socketio.png",
   },
   {
     label: "Modbus",
     description: "Communicate with Modbus devices over TCP or RTU",
-    image: "/images/ws.png",
+    image: "/images/socketio.png",
   },
 ];
 
