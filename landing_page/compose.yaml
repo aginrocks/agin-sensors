@@ -1,0 +1,17 @@
+services:
+  landing_page:
+    build: .
+    restart: unless-stopped
+    networks:
+      - proxy-network
+      - default
+    labels:
+      traefik.enable: true
+      traefik.port: 3000
+      traefik.http.services.aginsensors-page.loadbalancer.server.port: "3000"
+      traefik.http.routers.aginsensors-page.rule: "Host(`sensors.agin.rocks`)"
+
+networks:
+  proxy-network:
+    external: true
+  default:
