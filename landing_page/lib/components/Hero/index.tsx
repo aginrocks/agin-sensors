@@ -32,7 +32,7 @@ export function Hero() {
           </div>
         </div>
         <div className={screenshotContainer}>
-          <img src="/images/http.png" className={screenshot} />
+          <img src="/images/demo.png" className={screenshot} />
         </div>
       </div>
     </div>
