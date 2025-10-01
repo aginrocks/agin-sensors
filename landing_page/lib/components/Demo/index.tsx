@@ -1,5 +1,9 @@
 "use client";
-import { IconChartHistogram, IconFlame } from "@tabler/icons-react";
+import {
+  IconActivity,
+  IconChartHistogram,
+  IconFlame,
+} from "@tabler/icons-react";
 import { FeatureIcon } from "../FeatureIcon";
 import {
   actions,
@@ -66,7 +70,7 @@ export function DemoComponent() {
   return (
     <div className={download}>
       <div className={header}>
-        <FeatureIcon icon={IconFlame} variant="gradient" />
+        <FeatureIcon icon={IconActivity} variant="gradient" />
         <div className={title}>Try Agin Sensors</div>
         <div className={subtitle2}>Credentials for demo:</div>
         <div className={inline}>

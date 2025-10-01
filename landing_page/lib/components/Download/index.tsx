@@ -1,4 +1,9 @@
-import { IconBook, IconDownload, IconFlame } from "@tabler/icons-react";
+import {
+  IconActivity,
+  IconBook,
+  IconDownload,
+  IconFlame,
+} from "@tabler/icons-react";
 import { FeatureIcon } from "../FeatureIcon";
 import {
   actions,
@@ -16,14 +21,14 @@ export function Download() {
   return (
     <div className={download}>
       <div className={header}>
-        <FeatureIcon icon={IconFlame} variant="gradient" />
+        <FeatureIcon icon={IconActivity} variant="gradient" />
         <div className={title}>Get Started with Agin Sensors</div>
         <div className={subtitle}>
           Look at the demo, read documentation, or set it up yourself.
         </div>
       </div>
       <div className={actions}>
-        <a href={demoUrl} target="_blank">
+        <a href={"/demo"}>
           <Button variant="primary" icon={IconDownload}>
             Try demo
           </Button>
