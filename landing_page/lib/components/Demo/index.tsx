@@ -57,6 +57,7 @@ export function DemoComponent() {
   }
 
   function sendData() {
+    console.log("Sending data packet");
     if (socket) {
       socket.emit("measurement", randomDataPacket());
     }
@@ -87,7 +88,7 @@ export function DemoComponent() {
             Open demo
           </Button>
         </a>
-        <Button onClick={sendData}>Spike data</Button>
+        <Button onClick={() => sendData()}>Spike data</Button>
       </div>
       <div className={blurContainer}>
         <div className={blur}></div>
